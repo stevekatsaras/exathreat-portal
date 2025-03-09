@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#createMyUserMarketplaceForm').submit(function () {
+				$('#createMyUserMarketplaceFormDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/marketplace}">marketplace</a>
+			<div class="divider"> / </div>
+			<div class="section">my-user</div>
+			<div class="divider"> / </div>
+			<div class="active section">create</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('createMyUserMarketplaceForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('createMyUserMarketplaceForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Create marketplace user profile</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="createMyUserMarketplaceForm" th:action="@{/marketplace/my/user/create}" th:object="${createMyUserMarketplaceForm}" method="post">
+				<div class="fields">
+					<div class="six wide required field" th:classappend="${#fields.hasErrors('marketplaceUser.username')} ? error" title="Username">
+						<label>Username</label>
+						<div class="ui left icon input">
+							<i class="user circle icon"></i><input type="text" th:field="*{marketplaceUser.username}" placeholder="Username"/>
+						</div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/marketplace}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="createMyUserMarketplaceFormDimmer" style="display:none;">
+				<div class="ui text loader">Creating marketplace user profile...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

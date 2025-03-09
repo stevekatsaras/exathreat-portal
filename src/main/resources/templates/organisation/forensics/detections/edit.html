@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+			$('#indexDropdown').dropdown();
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {
+				if (dateRangeType == 'absolute') {
+					$('#organisationDetection\\.dateFormat').val(javaDateFormat);
+					$('#organisationDetection\\.timeFormat').val(javaTimeFormat);
+				}
+			});
+
+			$('#severityDropdown').dropdown();
+			$('#riskScoreSlider').slider({
+				min: 0,
+				max: 100,
+				start: $('#organisationDetection\\.riskScore').val(),
+				smooth: true,
+				onChange: function() {
+					updateSliderRiskScore();
+				}
+			});
+
+			$('#organisationDetection\\.runtime').on("change", function(e) {
+				if ($('#organisationDetection\\.runtime').val() == '' || $('#organisationDetection\\.runtime').val() < 1) {
+					$('#organisationDetection\\.runtime').val(1);
+				}
+			});
+
+			$('#runtimeUnitDropdown').dropdown();
+
+			$('#editDetectionForensicsForm').submit(function () {
+				$('#editDetectionForensicsFormDimmer').show();
+			});
+
+			/** 
+			 * initializing page...
+			 */
+
+			updateSliderRiskScore();
+		});
+
+		function updateSliderRiskScore() {
+			var riskScoreVal = $('#riskScoreSlider').slider('get value');
+			
+			if (riskScoreVal >= 0 && riskScoreVal <= 35) {
+				$('#riskScoreSlider').removeClass('yellow').removeClass('red').addClass('green');
+			}
+			else if (riskScoreVal >= 36 && riskScoreVal <= 75) {
+				$('#riskScoreSlider').removeClass('green').removeClass('red').addClass('yellow');
+			}
+			else if (riskScoreVal >= 76 && riskScoreVal <= 100) {
+				$('#riskScoreSlider').removeClass('green').removeClass('yellow').addClass('red');
+			}
+			$('#organisationDetection\\.riskScore').val(riskScoreVal);
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/forensics?page=detections(orgCode=${orgCode})}">forensics</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/forensics/detections(orgCode=${orgCode})}">detections</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editDetectionForensicsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editDetectionForensicsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit detection</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editDetectionForensicsForm" th:action="@{/organisation/{orgCode}/forensics/detections/{detCode}/edit(orgCode=${orgCode}, detCode=${detCode})}" th:object="${editDetectionForensicsForm}" method="post">
+				<input type="hidden" th:field="*{organisationDetection.dateFormat}"/>
+				<input type="hidden" th:field="*{organisationDetection.timeFormat}"/>
+				<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationDetection.name')} ? error" title="Name">
+					<label>Name</label>
+					<div class="ui left icon input">
+						<i class="eye icon"></i><input type="text" th:field="*{organisationDetection.name}" placeholder="Name"/>
+					</div>
+				</div>
+				<div class="field" title="Description">
+					<label>Description</label>
+					<div class="ui left icon input">
+						<i class="file alternate icon"></i><input type="text" th:field="*{organisationDetection.description}" placeholder="Description"/>
+					</div>
+				</div>
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationDetection.queryStr')} ? error" title="Query">
+					<label>Query</label>
+					<div class="ui input">
+						<textarea rows="2" th:field="*{organisationDetection.queryStr}"></textarea>
+						<div class="ui teal floating mini circular icon label" data-position="left center" data-inverted="" data-tooltip="Query language powered by Apache Lucene">
+							<i class="info icon"></i>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="four wide required field" th:classappend="${#fields.hasErrors('organisationDetection.indexAlias')} ? error" title="Index">
+						<label>Index</label>
+						<div class="ui fluid search selection dropdown" id="indexDropdown">
+							<input type="hidden" th:field="*{organisationDetection.indexAlias}" /> <i class="dropdown icon"></i>
+							<div class="default text">Index</div>
+							<div class="menu">
+								<div class="item" th:each="index,iter : ${indices}" th:attr="data-value=${index.aliasName}" th:text="${index.aliasName}"></div>
+								<div class="item" th:attr="data-value=exathreat-intel" th:text="exathreat-intel"></div>
+							</div>
+						</div>
+					</div>
+					<div class="six wide required field" th:classappend="${#fields.hasErrors('organisationDetection.dateRange')} ? error" title="Date range">
+						<label>Date range</label>
+						<div class="ui input">
+							<div th:replace="common/components/dateRangePicker.html :: formField(name='organisationDetection.dateRange', value=*{organisationDetection.dateRange})" th:remove="tag"></div>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="two wide required field" title="Severity">
+						<label>Severity</label>
+						<div class="ui fluid search selection dropdown" id="severityDropdown">
+							<input type="hidden" th:field="*{organisationDetection.severity}" /> <i class="dropdown icon"></i>
+							<div class="default text">Severity</div>
+							<div class="menu">
+								<a class="item" data-value="0">Low</a>
+								<a class="item" data-value="1">Medium</a>
+								<a class="item" data-value="2">High</a>
+							</div>
+						</div>
+					</div>
+					<div class="eight wide field" title="Risk score">
+						<label>Risk score</label>
+						<div class="ui bottom aligned labeled ticked small slider" id="riskScoreSlider" style="margin-top: -10px;"></div>
+						<input type="hidden" th:field="*{organisationDetection.riskScore}"/>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="two wide field">
+						<label>Run every</label>
+						<div class="ui input">
+							<input type="number" min="1" th:field="*{organisationDetection.runtime}" />
+						</div>
+					</div>
+					<div class="two wide field">
+						<label>&nbsp;</label>
+						<div class="ui fluid search selection dropdown" id="runtimeUnitDropdown">
+							<input type="hidden" th:field="*{organisationDetection.runtimeUnit}" /> <i class="dropdown icon"></i>
+							<div class="default text">Runtime</div>
+							<div class="menu">
+								<a class="item" data-value="minute">minutes</a>
+								<a class="item" data-value="hour">hours</a>
+								<a class="item" data-value="day">days</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="two wide field">
+						<label>Enabled</label>
+						<div class="ui toggle checkbox">
+							<input type="checkbox" th:field="*{organisationDetection.enabled}" />
+							<label></label>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" title="References">
+						<label>References</label>
+						<div class="ui input">
+							<textarea rows="2" th:field="*{organisationDetection.references}"></textarea>
+						</div>
+					</div>
+					<div class="eight wide field" title="Annotations">
+						<label>Annotations</label>
+						<div class="ui input">
+							<textarea rows="2" th:field="*{organisationDetection.annotations}"></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="field" title="Tags">
+					<label>Tags</label>
+					<div class="ui left input">
+						<input type="text" th:field="*{organisationDetection.tags}" placeholder="Tags"/>
+					</div>
+					<span>You can enter multiple tags by using a comma separator</span>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editDetectionForensicsFormDimmer" style="display:none;">
+				<div class="ui text loader">Updating organisation detection...</div>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>	
+</body>
+</html>

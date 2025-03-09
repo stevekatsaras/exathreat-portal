@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationInvoicesTable").tablesort();
+		});
+
+		function confirmInvoiceView(invCode) {
+			$('#modal-view-' + invCode).modal().modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=invoices(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">invoices</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Invoices</span>
+			</div>
+		</div>
+		<table id="organisationInvoicesTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th>Code</th>
+				<th class="sorted descending">From</th>
+				<th>To</th>
+				<th>Status</th>
+				<th class="two wide">Due</th>
+				<th>Events</th>
+				<th>Ingest (KB)</th>
+				<th>Ingest (MB)</th>
+				<th>Ingest (GB)</th>
+				<th>Amount</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationInvoice,iter : ${organisationInvoices}">
+					<td>
+						<i class="file alternate icon"></i>
+						<a href="#" th:text="${organisationInvoice.invCode}" th:attr="onclick=|confirmInvoiceView('${organisationInvoice.invCode}')|"></a>
+					</td>
+					<td>
+						<div th:text="${@timestampSupport.format(organisationInvoice.periodFrom, timezone, javaDateFormat)}"></div>
+					</td>
+					<td>
+						<div th:text="${@timestampSupport.format(organisationInvoice.periodTo, timezone, javaDateFormat)}"></div>
+					</td>
+					<td>
+						<div th:switch="${organisationInvoice.status}" th:remove="tag">
+							<div th:case="New" th:remove="tag"><div class="ui small blue label" th:text="${organisationInvoice.status}"></div></div>
+							<div th:case="Processing" th:remove="tag"><div class="ui small yellow label" th:text="${organisationInvoice.status}"></div></div>
+							<div th:case="Due" th:remove="tag"><div class="ui small red label" th:text="${organisationInvoice.status}"></div></div>
+							<div th:case="Paid" th:remove="tag"><div class="ui small green label" th:text="${organisationInvoice.status}"></div></div>
+						</div>
+					</td>
+					<td>
+						<div th:text="${@timestampSupport.format(organisationInvoice.dateDue, timezone, javaDateFormat)}"></div>
+					</td>
+					<td>
+						<div th:text="${#numbers.formatDecimal(organisationInvoice.eventTotal, 1, 'COMMA', 0, 'POINT')}"></div>
+					</td>
+					<td>
+						<div th:with="totalIngest=${(0.0 + organisationInvoice.dataIngestTotal) / 1024}">
+							<div th:text="${#numbers.formatDecimal(totalIngest, 1, 'COMMA', 2, 'POINT')} + ' KB'"></div>
+						</div>
+					</td>
+					<td>
+						<div th:with="totalIngest=${(0.0 + organisationInvoice.dataIngestTotal) / 1048576}">
+							<div th:text="${#numbers.formatDecimal(totalIngest, 1, 'COMMA', 2, 'POINT')} + ' MB'"></div>
+						</div>
+					</td>
+					<td>
+						<div th:with="totalIngest=${(0.0 + organisationInvoice.dataIngestTotal) / 1073741824}">
+							<div th:text="${#numbers.formatDecimal(totalIngest, 1, 'COMMA', 2, 'POINT')} + ' GB'"></div>
+						</div>
+					</td>
+					<td>
+						<div th:with="currency=${organisationInvoice.organisationSubscription.subscription.currency}" th:remove="tag">
+							<div th:with="totalAmt=${(0.0 + organisationInvoice.amountTotal) / currency.divisible}" th:remove="tag">
+								<div th:text="${currency.symbol} + ${#numbers.formatDecimal(totalAmt, 1, 'COMMA', 2, 'POINT')} + ' ' + ${currency.iso3}"></div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationInvoice,iter : ${organisationInvoices}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationInvoice.invCode}">
+				<div class="header" th:text="${organisationInvoice.invCode}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>From:</td>
+								<td th:text="${@timestampSupport.format(organisationInvoice.periodFrom, timezone, javaDateFormat)}"></td>
+							</tr>
+							<tr>
+								<td>To:</td>
+								<td th:text="${@timestampSupport.format(organisationInvoice.periodTo, timezone, javaDateFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Status:</td>
+								<td>
+									<div th:switch="${organisationInvoice.status}" th:remove="tag">
+										<div th:case="New" th:remove="tag"><div class="ui small blue label" th:text="${organisationInvoice.status}"></div></div>
+										<div th:case="Processing" th:remove="tag"><div class="ui small yellow label" th:text="${organisationInvoice.status}"></div></div>
+										<div th:case="Due" th:remove="tag"><div class="ui small red label" th:text="${organisationInvoice.status}"></div></div>
+										<div th:case="Paid" th:remove="tag"><div class="ui small green label" th:text="${organisationInvoice.status}"></div></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Events:</td>
+								<td th:text="${#numbers.formatDecimal(organisationInvoice.eventTotal, 1, 'COMMA', 0, 'POINT')}"></td>
+							</tr>
+							<tr>
+								<td>Ingest (GB):</td>
+								<td>
+									<div th:with="totalIngest=${(0.0 + organisationInvoice.dataIngestTotal) / 1073741824}">
+										<div th:text="${#numbers.formatDecimal(totalIngest, 1, 'COMMA', 2, 'POINT')} + ' GB'"></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Amount:</td>
+								<td>
+									<div th:with="currency=${organisationInvoice.organisationSubscription.subscription.currency}" th:remove="tag">
+										<div th:with="totalAmt=${(0.0 + organisationInvoice.amountTotal) / currency.divisible}" th:remove="tag">
+											<div th:text="${currency.symbol} + ${#numbers.formatDecimal(totalAmt, 1, 'COMMA', 2, 'POINT')} + ' ' + ${currency.iso3}"></div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td style="vertical-align: top;">Subscription:</td>
+								<td>
+									<div th:text="${organisationInvoice.organisationSubscription.subscription.name}" style="font-weight: bold;"></div>
+									<div th:text="${organisationInvoice.organisationSubscription.subscription.description}"></div>
+								</td>
+							</tr>
+							<tr>
+								<td style="vertical-align: top;">Features:</td>
+								<td>
+									<div class="ui bulleted list">
+										<div class="item">Log management</div>
+										<div class="item">Insights and visualisations</div>
+										<div class="item">Threat intelligence</div>
+										<div class="item">Monitoring and alerts</div>
+										<div th:each="feature: ${organisationInvoice.organisationSubscription.subscription.details.features}" th:remove="tag">
+											<div class="item" th:text="${feature}"></div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td style="vertical-align: top;">Terms</td>
+								<td>
+									<div class="ui bulleted list" style="font-weight: bold;">
+										<div th:each="term: ${organisationInvoice.organisationSubscription.subscription.details.terms}" th:remove="tag">
+											<div class="item" th:text="${term}"></div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationInvoice.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationInvoice.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

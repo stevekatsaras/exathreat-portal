@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${db.address}:${db.port}/${db.name}?allowPublicKeyRetrieval=true&serverTimezone=UTC&useSSL=false
+    username: ${db.username}
+    password: ${db.password}
+  jpa:
+    hibernate:
+      ddl-auto: update # (create, create-drop, validate, update, none)
+    show-sql: false
+  security:
+    oauth2:
+      client:
+        provider:
+          okta:
+            authorization-uri: https://${web.domain}${server.servlet.context-path}/login
+            user-name-attribute: email
+
+# Below are custom application YML settings
+
+application:
+  root-uri: https://${web.domain}${server.servlet.context-path}
+
+elasticsearch:
+  domain: ${es.domain}
+  port: ${es.port}
+  scheme: ${es.scheme}
+  connect-timeout: 5000 # 5 secs
+  socket-timeout: 300000 # 300 secs / 5 mins

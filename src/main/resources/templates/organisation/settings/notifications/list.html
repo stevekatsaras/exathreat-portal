@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationNotificationsTable").tablesort();
+		});
+
+		function confirmNotificationView(notCode) {
+			$('#modal-view-' + notCode).modal().modal('show');
+		}
+		
+		function confirmNotificationDelete(orgCode, notCode, url) {
+			$('#modal-delete-' + notCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=notifications(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">notifications</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your notification has been added.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your notification has been updated.</div>
+		</div>
+		<div class="ui warning fade message" th:if="${param.disabled}">
+			<div class="content">Your notification has been disabled.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.enabled}">
+			<div class="content">Your notification has been enabled.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your notification has been deleted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Notifications</span>
+			</div>
+			<div class="right menu">
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<a class="hyperlink item" title="Add notification" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/settings/notifications/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a>
+				</div>
+			</div>
+		</div>
+		<table id="organisationNotificationsTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="sorted ascending">Name</th>
+				<th class="two wide">Type</th>
+				<th class="one wide">Enabled</th>
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<th class="one wide">Actions</th>
+				</div>
+			</thead>
+			<tbody>
+				<tr th:each="organisationNotification,iter : ${organisationNotifications}">
+					<td>
+						<i class="bell icon"></i>
+						<a href="#" th:text="${organisationNotification.name}" th:attr="onclick=|confirmNotificationView('${organisationNotification.notCode}')|"></a>
+					</td>
+					<td>
+						<div th:text="${organisationNotification.typeLabel}"></div>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationNotification.enabled}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="yellow remove circle icon"></i></div>
+						</div>
+					</td>
+					<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+						<td>
+							<div class="ui tiny compact buttons">
+								<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/settings/notifications/{notCode}/edit(orgCode=${orgCode},notCode=${organisationNotification.notCode})}">
+									<i class="edit icon"></i>
+								</button>
+								<div th:switch="${organisationNotification.enabled}" th:remove="tag">
+									<div th:case="true" th:remove="tag">
+										<button class="ui compact tiny yellow icon hyperlink button" type="button" title="Disable" th:attr="data-uri=@{/organisation/{orgCode}/settings/notifications/{notCode}/disable(orgCode=${orgCode},notCode=${organisationNotification.notCode})}">
+											<i class="toggle off icon"></i>
+										</button>
+									</div>
+									<div th:case="false" th:remove="tag">
+										<button class="ui compact tiny green icon hyperlink button" type="button" title="Enable" th:attr="data-uri=@{/organisation/{orgCode}/settings/notifications/{notCode}/enable(orgCode=${orgCode},notCode=${organisationNotification.notCode})}">
+												<i class="toggle on icon"></i>
+										</button>
+									</div>
+								</div>
+								<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+									<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmNotificationDelete('${orgCode}', '${organisationNotification.notCode}', '@{/organisation/{orgCode}/settings/notifications/{notCode}/delete(orgCode=${orgCode},notCode=${organisationNotification.notCode})}')|">
+										<i class="trash icon"></i>
+									</button>
+								</div>
+							</div>
+							<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+								<div class="ui modal" th:id="'modal-delete-' + ${organisationNotification.notCode}">
+									<div class="header">Delete notification</div>
+									<div class="content">
+										<span th:text="'Are you sure you want to delete notification: ' + ${organisationNotification.name}" style="font-weight: bold;"></span>
+									</div>
+									<div class="actions">
+										<button class="ui compact cancel button" type="button">No</button>
+										<button class="ui compact red approve button" type="button">Yes</button>
+									</div>
+								</div>
+							</div>
+						</td>
+					</div>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationNotification,iter : ${organisationNotifications}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationNotification.notCode}">
+				<div class="header" th:text="${organisationNotification.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Description:</td>
+								<td th:text="${organisationNotification.description}"></td>
+							</tr>
+							<tr>
+								<td>Type:</td>
+								<td th:text="${organisationNotification.typeLabel}"></td>
+							</tr>
+							<tr>
+								<td>Enabled:</td>
+								<td>
+									<div th:switch="${organisationNotification.enabled}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div>
+									</div>
+								</td>
+							</tr>
+							<div th:switch="${organisationNotification.type}" th:remove="tag">
+								<div th:case="email" th:remove="tag">
+									<tr>
+										<td>Addresses:</td>
+										<td th:text="${organisationNotification.settings.emailAddresses}"></td>
+									</tr>
+								</div>
+								<div th:case="google" th:remove="tag">
+									<tr>
+										<td>Webhook URL:</td>
+										<td th:text="${organisationNotification.settings.googleChatWebhookUrl}"></td>
+									</tr>
+								</div>
+								<div th:case="telegram" th:remove="tag">
+									<tr>
+										<td>Bot API Token:</td>
+										<td th:text="${organisationNotification.settings.telegramBotApiToken}"></td>
+									</tr>
+									<tr>
+										<td>Bot Chat ID:</td>
+										<td th:text="${organisationNotification.settings.telegramBotChatID}"></td>
+									</tr>
+								</div>
+							</div>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationNotification.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationNotification.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

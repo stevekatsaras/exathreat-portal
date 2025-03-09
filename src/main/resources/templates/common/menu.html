@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head">
+	<script>
+		$(document).ready(function() {
+			$('#userMenuItem').dropdown({
+				on: 'hover'
+			});
+			$('#organisationDropdown').dropdown({
+				on: 'hover'
+			});
+			$('#insightsDropdown').dropdown({
+				on: 'hover'
+			});
+			$('#forensicsDropdown').dropdown({
+				on: 'hover'
+			});
+			$('#settingsDropdown').dropdown({
+				on: 'hover'
+			});
+			$('#logoutMenuItem').click(function () {
+				$('#logoutForm').submit();
+			});
+		});
+	</script>
+</head>
+<body>
+	<div th:fragment="menu">
+		<div class="ui borderless top attached inverted teal menu" style="border-radius:0px;">
+			<a class="ui icon item" title="Home" th:href="@{/}">
+				<i class="home icon"></i>
+			</a>
+			<a class="ui icon item" title="Create new organisation" th:href="@{/organisation/create}">
+				<i class="add icon"></i>
+			</a>
+			<div id="organisationDropdown" class="ui dropdown item" style="z-index: 1001;">
+				<input type="hidden" name="orgCode" th:value="${orgCode}">
+				<div class="default text" style="color: rgba(255,255,255,.9);">Select organisation</div>
+				<i class="dropdown icon"></i>
+				<div class="menu">
+					<div th:each="userOrganisation,iter : ${userOrganisations}" th:remove="tag">
+						<a class="item" th:attr="data-value=${userOrganisation.organisation.orgCode}" th:href="@{/organisation/{orgCode}(orgCode=${userOrganisation.organisation.orgCode})}">
+							<i class="building icon"></i>
+							<span th:text="${userOrganisation.organisation.orgName}"></span>
+						</a>
+					</div>
+				</div>
+			</div>
+			<div th:if="${currentOrganisation != null}" th:remove="tag">
+				<div th:if="${currentOrganisation.status == 'Active'}" th:remove="tag">
+					<div id="insightsDropdown" class="ui dropdown item" title="Insights" style="z-index: 1001;">
+						Insights <i class="dropdown icon"></i>
+						<div class="menu">
+							<a class="item" title="Explore" th:href="@{/organisation/{orgCode}/insights/explore(orgCode=${orgCode})}">
+								<i class="compass icon"></i>
+								Explore
+							</a>
+							<a class="item" title="Visualize" th:href="@{/organisation/{orgCode}/insights/visualize(orgCode=${orgCode})}">
+								<i class="eye icon"></i>
+								Visualize
+							</a>
+						</div>
+					</div>
+					<div id="forensicsDropdown" class="ui dropdown item" title="Forensics" style="z-index: 1001;">
+						Forensics <i class="dropdown icon"></i>
+						<div class="menu">
+							<!-- <a class="item" title="Alerts">
+								<i class="bell icon"></i>
+								Alerts
+							</a> -->
+							<a class="item" title="Detections" th:href="@{/organisation/{orgCode}/forensics/detections(orgCode=${orgCode})}">
+								<i class="bullseye icon"></i>
+								Detections
+							</a>
+							<a class="item" title="Threats" th:href="@{/organisation/{orgCode}/forensics/threats(orgCode=${orgCode})}">
+								<i class="asterisk icon"></i>
+								Threats
+							</a>
+						</div>
+					</div>
+					<div id="settingsDropdown" class="ui dropdown item" title="Settings" style="z-index: 1001;">
+						Settings <i class="dropdown icon"></i>
+						<div class="menu">
+							<a class="item" title="General" th:href="@{/organisation/{orgCode}/settings/general(orgCode=${orgCode})}">
+								<i class="cog icon"></i>
+								General
+							</a>
+							<a class="item" title="Indexes" th:href="@{/organisation/{orgCode}/settings/indexes(orgCode=${orgCode})}">
+								<i class="list alternate outline icon"></i>
+								Indexes
+							</a>
+							<a class="item" title="Invoices" th:href="@{/organisation/{orgCode}/settings/invoices(orgCode=${orgCode})}">
+								<i class="file icon"></i>
+								Invoices
+							</a>
+							<a class="item" title="Keys" th:href="@{/organisation/{orgCode}/settings/keys(orgCode=${orgCode})}">
+								<i class="key icon"></i>
+								Keys
+							</a>
+							<a class="item" title="Notifications" th:href="@{/organisation/{orgCode}/settings/notifications(orgCode=${orgCode})}">
+								<i class="bell icon"></i>
+								Notifications
+							</a>
+							<!-- <a class="item" title="Processors" th:href="@{/organisation/{orgCode}/settings/processors(orgCode=${orgCode})}">
+								<i class="microchip icon"></i>
+								Processors
+							</a> -->
+							<a class="item" title="Queries" th:href="@{/organisation/{orgCode}/settings/queries(orgCode=${orgCode})}">
+								<i class="file code icon"></i>
+								Queries
+							</a>
+							<a class="item" title="Subscriptions" th:href="@{/organisation/{orgCode}/settings/subscriptions(orgCode=${orgCode})}">
+								<i class="sync icon"></i>
+								Subscriptions
+							</a>
+							<a class="item" title="Users" th:href="@{/organisation/{orgCode}/settings/users(orgCode=${orgCode})}">
+								<i class="users icon"></i>
+								Users
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="right menu">
+				<a class="ui icon item" title="Marketplace" th:href="@{/marketplace}">
+					<i class="store icon"></i>
+				</a>
+				<div class="ui dropdown icon item" id="userMenuItem" style="z-index: 1001;">
+					<i class="user icon"></i>
+					<div class="menu" style="right:0; left:auto;">
+						<div class="header" th:text="${emailAddress}"></div>
+						<div class="divider"></div>
+						<a class="item" title="System" th:href="@{/system/user}">
+							<i class="keyboard icon"></i>
+							System
+						</a>
+						<a class="item" id="logoutMenuItem">
+							<i class="sign out icon"></i> Logout
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<form id="logoutForm" th:action="@{/logout}" method="post">
+			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+		</form>
+	</div>
+</body>
+</html>

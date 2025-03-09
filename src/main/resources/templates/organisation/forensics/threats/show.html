@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		var chartByType;
+		var geoIpMap;
+		var geoIpMapMarkers;
+		var chartByProvider;
+		var chartByConfidence;
+		var chartByCountry;
+		var chartByAsn;
+
+		$(document).ready(function() {
+			$('form').submit(false);
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {});
+
+			$('.run.button').on('click', function() {
+				loadData({
+					dateRange: $('#dateRangeInput').val(),
+					dateRangeFormat: $('#dateRangeJavaDateFormat').val() + ' ' + $('#dateRangeJavaTimeFormat').val()
+				});
+			});
+
+			initChartByType();
+			initMapByGeo();
+			initChartByProvider();
+			initChartByConfidence();
+			initChartByCountry();
+			initChartByAsn();
+
+			loadData({
+				dateRange: $('#dateRangeInput').val(),
+				dateRangeFormat: $('#dateRangeJavaDateFormat').val() + ' ' + $('#dateRangeJavaTimeFormat').val()
+			});
+		});
+
+		function loadData(ajaxData) {
+			loadChartByType(ajaxData);
+			loadMapByGeo(ajaxData);
+			loadChartByProvider(ajaxData);
+			loadChartByConfidence(ajaxData);
+			loadChartByCountry(ajaxData);
+			loadChartByAsn(ajaxData);
+		}
+
+		function initChartByType() {
+			chartByType = new ApexCharts(document.querySelector("#my_dataviz_bytype"), {
+				chart: {
+					height: 280,
+					type: 'pie',
+					width: '100%'
+				},
+				dataLabels: {
+					enabled: true
+				},
+				legend: {
+					position: 'bottom',
+					show: true
+				},
+				noData: {
+					text: 'Loading...'
+				},
+				series: [],
+				title: {
+					text: 'Top 5 types'
+				}
+			});
+			chartByType.render();
+		}
+
+		function initMapByGeo() {
+			geoIpMap = L.map('my_dataviz_bygeo', {
+				fullscreenControl: true,
+				center: [0, 0],
+				minZoom: 1,
+				zoom: 1,
+				worldCopyJump: true
+			});
+			
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+				attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">Carto</a>', 
+				subdomains: ['a','b','c']
+			}).addTo(geoIpMap);
+
+			geoIpMapMarkers = L.markerClusterGroup();
+			geoIpMap.addLayer(geoIpMapMarkers);
+		}
+
+		function initChartByProvider() {
+			chartByProvider = new ApexCharts(document.querySelector("#my_dataviz_byprovider"), {
+				chart: {
+					height: 280,
+					type: 'pie',
+					width: '100%'
+				},
+				dataLabels: {
+					enabled: true
+				},
+				legend: {
+					position: 'bottom',
+					show: true
+				},
+				noData: {
+					text: 'Loading...'
+				},
+				series: [],
+				title: {
+					text: 'Top 5 providers'
+				}
+			});
+			chartByProvider.render();
+		}
+
+		function initChartByConfidence() {
+			chartByConfidence = new ApexCharts(document.querySelector("#my_dataviz_byconfidence"), {
+				chart: {
+					height: 280,
+					type: 'pie',
+					width: '100%'
+				},
+				dataLabels: {
+					enabled: true
+				},
+				legend: {
+					position: 'bottom',
+					show: true
+				},
+				noData: {
+					text: 'Loading...'
+				},
+				series: [],
+				title: {
+					text: 'Top 5 confidence scores'
+				}
+			});
+			chartByConfidence.render();
+		}
+
+		function initChartByCountry() {
+			chartByCountry = new ApexCharts(document.querySelector("#my_dataviz_bycountry"), {
+				chart: {
+					height: 260,
+					toolbar: {
+						show: false
+					},
+					type: 'treemap',
+					width: '100%'
+				},
+				colors: ['#03a9f4'],
+				noData: {
+					text: 'Loading...'
+				},
+				series: [],
+				title: {
+					text: 'Top 5 countries'
+				}
+			});
+			chartByCountry.render();
+		}
+
+		function initChartByAsn() {
+			chartByAsn = new ApexCharts(document.querySelector("#my_dataviz_byasn"), {
+				chart: {
+					height: 260,
+					toolbar: {
+						show: false
+					},
+					type: 'treemap',
+					width: '100%'
+				},
+				colors: ['#4caf50'],
+				noData: {
+					text: 'Loading...'
+				},
+				series: [],
+				title: {
+					text: 'Top 5 ASNs'
+				}
+			});
+			chartByAsn.render();
+		}
+
+		function loadChartByType(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/bytype',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					if (!data.searchResults || data.searchResults.resultsSizeTotal == 0) {
+						chartByType.updateSeries([]);
+						chartByType.updateOptions({
+							labels: [],
+							noData: {
+								text: "No data available"
+							}
+						});
+					}
+					else {
+						chartByType.updateSeries(data.searchResults.series);
+						chartByType.updateOptions({
+							labels: data.searchResults.labels
+						});
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadMapByGeo(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/bygeo',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					geoIpMapMarkers.clearLayers();
+
+					if (data.searchResults || data.searchResults.resultsSizeTotal > 0) {
+						data.searchResults.geoIps.forEach(function (geoIp) {
+							var popup = "<b>" + geoIp.ipv4 + "</b><br/>" + 
+								((geoIp.city && geoIp.postcode) ? geoIp.city + " " + geoIp.postcode + "<br/>" : "") + 
+								geoIp.country;
+							
+							var marker = L.marker([geoIp.lat, geoIp.lon]);
+							marker.bindPopup(popup, {
+								closeButton: false
+							});
+							geoIpMapMarkers.addLayer(marker);
+						});
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadChartByProvider(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/byprovider',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					if (!data.searchResults || data.searchResults.resultsSizeTotal == 0) {
+						chartByProvider.updateSeries([]);
+						chartByProvider.updateOptions({
+							labels: [],
+							noData: {
+								text: "No data available"
+							}
+						});
+					}
+					else {
+						chartByProvider.updateSeries(data.searchResults.series);
+						chartByProvider.updateOptions({
+							labels: data.searchResults.labels
+						});
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadChartByConfidence(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/byconfidence',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					if (!data.searchResults || data.searchResults.resultsSizeTotal == 0) {
+						chartByConfidence.updateSeries([]);
+						chartByConfidence.updateOptions({
+							labels: [],
+							noData: {
+								text: "No data available"
+							}
+						});
+					}
+					else {
+						chartByConfidence.updateSeries(data.searchResults.series);
+						chartByConfidence.updateOptions({
+							labels: data.searchResults.labels
+						});
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadChartByCountry(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/bycountry',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					if (!data.searchResults || data.searchResults.resultsSizeTotal == 0) {
+						chartByCountry.updateSeries([]);
+						chartByCountry.updateOptions({
+							noData: {
+								text: "No data available"
+							}
+						});
+					}
+					else {
+						chartByCountry.updateSeries(data.searchResults.series);
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadChartByAsn(ajaxData) {
+			$.ajax({
+				url: './threats/data/load/byasn',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					if (!data.searchResults || data.searchResults.resultsSizeTotal == 0) {
+						chartByAsn.updateSeries([]);
+						chartByAsn.updateOptions({
+							noData: {
+								text: "No data available"
+							}
+						});
+					}
+					else {
+						chartByAsn.updateSeries(data.searchResults.series);
+					}
+					$('.run.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+	</script>
+	<style>
+		#my_dataviz_bygeo_header {
+			font-family: Helvetica, Arial, sans-serif;
+			font-size: 14px;
+			font-weight: 900;
+			margin-bottom: 5px;
+		}
+		#my_dataviz_bygeo {
+			height: 93%;
+			z-index: 1;
+		}
+	</style>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/forensics?page=threats(orgCode=${orgCode})}">forensics</a>
+			<div class="divider"> / </div>
+			<div class="active section">threats</div>
+		</div>
+
+		<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Threats</span>
+			</div>
+			<div class="right menu">
+				<a class="item" style="width: 425px;">
+					<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px;">
+						<div th:replace="common/components/dateRangePicker.html :: field(value='Last 24 hours')" th:remove="tag"></div>
+					</div>
+				</a>
+				<a class="item">
+					<button class="ui compact teal tiny run button" type="button" style="margin: -10px;">Run</button>
+				</a>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<div class="ui celled grid">
+				<div class="row">
+					<div class="four wide column">
+						<div id="my_dataviz_bytype"></div>
+					</div>
+					<div class="twelve wide column">
+						<div id="my_dataviz_bygeo_header">Latest 100 unique IPs</div>
+						<div id="my_dataviz_bygeo"></div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="four wide column">
+						<div id="my_dataviz_byprovider"></div>
+					</div>
+					<div class="four wide column">
+						<div id="my_dataviz_byconfidence"></div>
+					</div>
+					<div class="four wide column">
+						<div id="my_dataviz_bycountry"></div>
+					</div>
+					<div class="four wide column">
+						<div id="my_dataviz_byasn"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>
+
+	</div>
+</body>
+</html>

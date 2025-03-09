@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#userOrganisationsTable").tablesort();
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui negative fade message" th:if="${param.deactivated}">
+			<div class="content">Your organisation has been deactivated.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span th:text="'Welcome ' + ${givenName} + '!'"></span>
+			</div>
+		</div>
+		<div th:switch="${#lists.size(userOrganisations)}" th:remove="tag">
+			<div th:case="'0'" th:remove="tag">
+				<div class="ui placeholder bottom attached segment">
+					<div class="ui tiny icon header">
+						<i class="building icon"></i>
+						To get started, let's create a new organisation.
+					</div>
+					<div class="ui compact hyperlink teal button" type="button" th:attr="data-uri=@{/organisation/create}">Create new organisation</div>
+				</div>
+			</div>
+			<div th:case="*" th:remove="tag">
+				<table id="userOrganisationsTable" class="ui sortable selectable striped celled very compact bottom attached table">
+					<thead>
+						<th class="two wide">Account</th>
+						<th class="sorted ascending">Organisation</th>
+						<th class="two wide">Signed</th>
+						<th class="one wide">Status</th>
+						<th class="one wide center aligned">Owner</th>
+					</thead>
+					<tbody>
+						<tr th:each="userOrganisation,iter : ${userOrganisations}">
+							<td>
+								<i class="building icon"></i>
+								<a th:href="@{/organisation/{orgCode}(orgCode=${userOrganisation.organisation.orgCode})}" th:text="${userOrganisation.organisation.orgCode}"></a>
+							</td>
+							<td>
+								<span th:text="${userOrganisation.organisation.orgName}"></span>
+							</td>
+							<td>
+								<div th:text="${@timestampSupport.format(userOrganisation.organisation.signupDate, timezone, javaDateFormat)}"></div>
+							</td>
+							<td>
+								<div th:switch="${userOrganisation.organisation.status}" th:remove="tag">
+									<div th:case="Active" th:remove="tag"><div class="ui small green label" th:text="${userOrganisation.organisation.status}"></div></div>
+									<div th:case="Discontinued" th:remove="tag"><div class="ui small red label" th:text="${userOrganisation.organisation.status}"></div></div>
+									<div th:case="Suspended" th:remove="tag"><div class="ui small yellow label" th:text="${userOrganisation.organisation.status}"></div></div>
+								</div>
+							</td>
+							<td class="center aligned">
+								<div th:switch="${userOrganisation.userOwner}" th:remove="tag">
+									<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+									<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div> 
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

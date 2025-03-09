@@ -1,0 +1,70 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /portal
+    session:
+      cookie:
+        http-only: false
+      timeout: 60m
+      tracking-modes:
+      - cookie
+  forward-headers-strategy: framework
+spring:
+  application:
+    name: exathreat-portal
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 1
+      maximum-pool-size: 5 # connections = ((core_count * 2) + effective_spindle_count); https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: administrator@exathreat.com
+    password: kndelijclecsjwcb
+    protocol: smtp
+    properties:
+      mail:
+        debug: false
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        transport:
+          protocol: smtp
+  thymeleaf:
+    cache: false
+okta:
+  client:
+    org-url: https://dev-650253.okta.com
+  oauth2:
+    client-id: 0oa2c84e00hgcT4eI357
+    client-secret: S3CKs94N_oDdLoHhPU0fyWJu3if2ojwElhTiVvlc
+    issuer: ${okta.client.org-url}/oauth2/aus1j75pam9mOYvxm357
+    redirect-uri: /authorization-code/callback
+    scopes:
+    - openid
+    - profile
+    - email
+
+management:
+  health:
+    elasticsearch:
+      enabled: false
+    mail:
+      enabled: false
+
+# Below are custom application YML settings
+
+idp:
+  facebook-id: 0oa2uzcg93dZ4Yuj1357
+  google-id: 0oa2rtoskg6n3ESYz357
+  microsoft-id: 0oa2uzdms2dWs96qa357
+
+debounce:
+  root-uri: https://disposable.debounce.io
+
+telegram:
+  root-uri: https://api.telegram.org

@@ -1,0 +1,219 @@
+<!--
+	To use the date range picker your page, you will need to call the following fragments:
+	1. head
+		eg. <object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	
+	2. common
+		eg. <div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+	
+	3. field or formField
+		eg. <div th:replace="common/components/dateRangePicker.html :: field(value='???')" th:remove="tag"></div>
+		eg. <div th:replace="common/components/dateRangePicker.html :: formField(name='???', value=*{???})" th:remove="tag"></div>
+	
+	4. popup
+		eg. <div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>
+
+	5. If you would like to listen for a date change event, you will need to attach a JavaScript 'on' function like this:
+		eg.		
+		$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {
+
+		});
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head" th:remove="tag">
+	<script type="text/javascript" th:inline="javascript">
+		var jsDateFormat = /*[[${jsDateFormat}]]*/ '';
+		var jsTimeFormat = /*[[${jsTimeFormat}]]*/ '';
+
+		$(document).ready(function() {
+			initializeDateRangePopup();
+
+			$('#dateRangeInput').popup({
+				closable: true,
+				inline: true,
+    		popup: $('#dateRangePopup'),
+				position: 'bottom left',
+				preserve: true,
+				on: 'click',
+				onShow: function() {
+					initializeAbsoluteDateRangeCalendars();
+				}
+			});
+		});
+
+		function initializeDateRangePopup() {
+			$('#dateRangeTabs .item').tab({});
+
+			$('#relPeriodInput').on("change", function(e) {
+				if ($('#relPeriodInput').val() < 1) {
+					$('#relPeriodInput').val(1);
+				}
+			});
+
+			$('#relPeriodUnitDropdown').dropdown({});
+
+			$('.set.reldate.button').on('click', function() {
+				setRelativeDateRange();
+				triggerDateRangeEvent('relative');
+				$('#dateRangeInput').popup('hide');
+			});
+
+			$('.set.absdate.button').on('click', function() {
+				if ($('#absFromDateInput').val().length > 0 && $('#absToDateInput').val().length > 0) {
+					setAbsoluteDateRange();
+					triggerDateRangeEvent('absolute');
+					$('#dateRangeInput').popup('hide');
+				}
+				else if ($('#absFromDateInput').val().length === 0) {
+					$('#absFromDateCalendar').calendar('popup', 'show');
+				}
+				else if ($('#absToDateInput').val().length === 0) {
+					$('#absToDateCalendar').calendar('popup', 'show');
+				}
+			});
+		}
+
+		function initializeAbsoluteDateRangeCalendars() {
+			$('#absFromDateCalendar').calendar({
+				ampm: false,
+				endCalendar: $('#absToDateCalendar'),
+				today: true,
+				type: 'datetime',
+				formatter: {
+					datetime: function (datetime, settings) {
+						if (!datetime) {
+							return '';
+						}
+						return moment(datetime).format(jsDateFormat + ' ' + jsTimeFormat);
+					}
+				}
+			});
+
+			$('#absToDateCalendar').calendar({
+				ampm: false,
+				startCalendar: $('#absFromDateCalendar'),
+				today: true,
+				type: 'datetime',
+				formatter: {
+					datetime: function (datetime, settings) {
+						if (!datetime) {
+							return '';
+						}
+						return moment(datetime).format(jsDateFormat + ' ' + jsTimeFormat);
+					}
+				}
+			});
+		}
+
+		function setRelativeDateRange() {
+			var period = $('#relPeriodInput').val();
+			var periodUnit = $('#relPeriodUnitDropdown').dropdown('get value');
+			$('#dateRangeInput').val('Last ' + period + ' ' + ((period > 1) ? periodUnit + 's' : periodUnit));
+		}
+
+		function setAbsoluteDateRange() {
+			var from = $('#absFromDateInput').val();
+			var to = $('#absToDateInput').val();
+			$('#dateRangeInput').val(from + ' to ' + to);
+		}
+
+		function triggerDateRangeEvent(dateRangeType) {
+			$(document).trigger('DateRangeChangeEvent', [
+				$('#dateRangeInput').val(),
+				dateRangeType,
+				$('#dateRangeJavaDateFormat').val(),
+				$('#dateRangeJavaTimeFormat').val()
+			]);
+		}
+	</script>
+	<style>
+		#dateRangeInput:hover {
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div th:fragment="common" th:remove="tag">
+		<input type="hidden" id="dateRangeJavaDateFormat" th:value="${javaDateFormat}" />
+		<input type="hidden" id="dateRangeJavaTimeFormat" th:value="${javaTimeFormat}" />
+	</div>
+	<div th:fragment="field(value)" th:remove="tag">
+		<input type="text" id="dateRangeInput" th:value="${value}" placeholder="Date range" readonly />
+	</div>
+	<div th:fragment="formField(name, value)" th:remove="tag">
+		<input type="text" id="dateRangeInput" th:name="${name}" th:value="${value}" placeholder="Date range" readonly />
+	</div>
+	<div th:fragment="popup" th:remove="tag">
+		<div class="ui popup" id="dateRangePopup" style="min-width: 400px;">
+			<div class="ui attached tabular menu" id="dateRangeTabs">
+				<a class="active item" data-tab="relative">Relative</a>
+				<a class="item" data-tab="absolute">Absolute</a>
+			</div>
+			<div class="ui tab attached basic segment" data-tab="relative">				
+				<div class="ui form" autocomplete="off">
+					<div class="fields">
+						<div class="six wide field">
+							<div class="ui fluid input" style="min-height: 2.7em;">
+								<input type="number" min="1" value="1" id="relPeriodInput" />
+							</div>
+						</div>
+						<div class="ten wide field">
+							<div class="ui selection dropdown" id="relPeriodUnitDropdown">
+								<input type="hidden" name="relPeriodUnit" value="hour" />
+								<i class="dropdown icon"></i>
+								<div class="default text">Period</div>
+								<div class="menu">
+									<div class="item" data-value="second">seconds ago</div>
+									<div class="item" data-value="minute">minutes ago</div>
+									<div class="item" data-value="hour">hours ago</div>
+									<div class="item" data-value="day">days ago</div>
+									<div class="item" data-value="week">weeks ago</div>
+									<div class="item" data-value="month">months ago</div>
+									<div class="item" data-value="year">years ago</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="fields" style="margin-top: 10px;">
+						<div class="sixteen wide field">
+							<button class="ui compact set reldate button" type="button">Set</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="ui tab attached basic segment" data-tab="absolute">
+				<div class="ui form" autocomplete="off">
+					<div class="fields">
+						<div class="sixteen wide field">
+							<label>From</label>
+							<div class="ui calendar" id="absFromDateCalendar">
+								<div class="ui input left icon" style="min-height: 2.7em;">
+									<i class="calendar icon"></i>
+									<input type="text" id="absFromDateInput" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="fields" style="margin-top: 10px;">
+						<div class="sixteen wide field">
+							<label>To</label>
+							<div class="ui calendar" id="absToDateCalendar">
+								<div class="ui input left icon" style="min-height: 2.7em;">
+									<i class="calendar icon"></i>
+									<input type="text" id="absToDateInput" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="fields" style="margin-top: 10px;">
+						<div class="sixteen wide field">
+							<button class="ui compact set absdate button" type="button">Set</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

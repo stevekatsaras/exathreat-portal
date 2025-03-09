@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head">
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<link type="image/ico" rel="icon" th:href="@{/static/favicon.ico}">
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.8/dist/semantic.min.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/leaflet-fullscreen@1.0.2/dist/leaflet.fullscreen.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.0/dist/MarkerCluster.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.0/dist/MarkerCluster.Default.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/jquery.json-viewer@1.4.0/json-viewer/jquery.json-viewer.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/spectrum-colorpicker@1.8.1/spectrum.css}" />
+	<link type="text/css" rel="stylesheet" th:href="@{https://cdn.jsdelivr.net/npm/gridstack@4.2.6/dist/gridstack.min.css}" />
+	<style>
+		.ui.ui.inverted.teal.menu, .ui.ui.ui.inverted.menu .teal.active.item {
+			background-color: #048383;
+		}
+		.ui.teal.button, .ui.teal.buttons .button {
+			background-color: #048383;
+		}
+		.ui.teal.labels .label, .ui.ui.ui.teal.label {
+			background-color: #048383;
+			border-color: #048383;
+		}
+	</style>
+
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/moment-timezone@0.5.33/builds/moment-timezone-with-data.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.8/dist/semantic.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://semantic-ui.com/javascript/library/tablesort.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/apexcharts}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/leaflet-fullscreen@1.0.2/dist/Leaflet.fullscreen.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.0/dist/leaflet.markercluster.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/jquery.json-viewer@1.4.0/json-viewer/jquery.json-viewer.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/jquery-validation@1.19.3/dist/jquery.validate.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/jquery-validation@1.19.3/dist/additional-methods.min.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/spectrum-colorpicker@1.8.1/spectrum.js}"></script>
+	<script type="text/javascript" th:src="@{https://cdn.jsdelivr.net/npm/gridstack@4.2.6/dist/gridstack-h5.js}"></script>
+	<script>
+		$(document).ready(function () {
+			$(".fade.message").fadeIn('slow').delay(3000).fadeOut('fast');
+			$('.hyperlink.button, .hyperlink.item').on('click', function () {
+				window.location.href = $(this).data('uri');
+			});
+			$(document).ajaxSend(function(e, xhr, options) {
+        xhr.setRequestHeader('X-CSRF-TOKEN', $("input[name='_csrf']").val());
+    	});
+			$(document).ajaxError(function(e, xhr, options) {
+				if (xhr.status == 901) {	// custom status code 901 - session timed out. force window reload, prompting spring security to redirect to 'sign-in' screen
+					location.reload();
+        }
+    	});
+		});
+	</script>
+</head>
+</html>

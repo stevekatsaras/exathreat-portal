@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+			$('form').submit(false);
+
+			$('#newItem').click(function() {
+				location.reload();
+			});
+
+			$('#openItem').dropdown({
+				apiSettings: {
+					cache: false,
+					url: './explore/item/list'
+				},
+				filterRemoteData: false,
+				onChange: function(value, text, $choice) {
+					if (value != '') {
+						var ajaxData = {};
+						var itemValueArr = value.split(':');
+						if ('query' == itemValueArr[0]) {
+							ajaxData = {
+								itemType: itemValueArr[0],
+								organisationQuery: {
+									queryCode: itemValueArr[1]
+								}
+							};
+						}
+						else if ('detection' == itemValueArr[0]) {
+							ajaxData = {
+								itemType: itemValueArr[0],
+								organisationDetection: {
+									detCode: itemValueArr[1]
+								}
+							};
+						}
+						openItem(ajaxData);
+					}
+				},
+				onHide: function() {
+					$('#openItem').dropdown('clear');
+				},
+				saveRemoteData: false
+			});
+
+			$('#saveItem').dropdown({
+				onHide: function() {
+					$('#saveItem').dropdown('clear');
+				}
+			});
+
+			$('#saveItemQuery').click(function() {
+				$('#savedQueryNameInput').val(($('#itemName').html() == 'Untitled') ? 'Untitled' : $('#itemName').html());
+				$('#modal-save-query').modal({
+					onApprove: function() {
+						if ($('#savedQueryNameInput').val() == '') {
+							$('#savedQueryNameField').addClass('error');
+							return false;
+						}
+						if ($('#savedQueryNameInput').val() == 'Untitled') {
+							$('#savedQueryNameInput').val('Query saved at ' + moment().format());
+						}
+						var ajaxData = {
+							itemType: 'query',
+							organisationQuery: {
+								queryCode: ($('#itemCode').val() == null) ? '' : ($('#itemCode').val() != null && $('#itemName').html() != $('#savedQueryNameInput').val()) ? '' : $('#itemCode').val(),
+								name: $('#savedQueryNameInput').val(),
+								queryStr: $('#querySearchInput').val(),
+								indexAlias: $('#indexDropdown').dropdown('get value'),
+								dateRange: $('#dateRangeInput').val(),
+								dateFormat: $('#dateRangeJavaDateFormat').val(),
+								timeFormat: $('#dateRangeJavaTimeFormat').val(),
+								intervalUnit: $('#intervalUnitDropdown').dropdown('get value'),
+								minDocCount: $('#minDocCountInput').val()
+							},
+							saveAction: ($('#itemCode').val() == null) ? 'new' : ($('#itemCode').val() != null && $('#itemName').html() != $('#savedQueryNameInput').val()) ? 'new' : 'update'
+						};
+						saveItem(ajaxData);
+					},
+					onHide: function() {
+						$('#savedQueryNameField').removeClass('error');
+					}
+				}).modal('show');
+			});
+
+			$('#saveItemDetection').click(function() {
+				if ($('#querySearchInput').val() == '') {
+					$('.required.detection.message').show().delay(3000).fadeOut('fast');
+				}
+				else {
+					$('#savedDetectionNameInput').val(($('#itemName').html() == 'Untitled') ? 'Untitled' : $('#itemName').html());
+					$('#modal-save-detection').modal({
+						onApprove: function() {
+							if ($('#savedDetectionNameInput').val() == '') {
+								$('#savedDetectionNameField').addClass('error');
+								return false;
+							}
+							if ($('#savedDetectionNameInput').val() == 'Untitled') {
+								$('#savedDetectionNameInput').val('Detection saved at ' + moment().format());
+							}
+							var ajaxData = {
+								itemType: 'detection',
+								organisationDetection: {
+									detCode: ($('#itemCode').val() == null) ? '' : ($('#itemCode').val() != null && $('#itemName').html() != $('#savedDetectionNameInput').val()) ? '' : $('#itemCode').val(),
+									name: $('#savedDetectionNameInput').val(),
+									queryStr: $('#querySearchInput').val(),
+									indexAlias: $('#indexDropdown').dropdown('get value'),
+									dateRange: $('#dateRangeInput').val(),
+									dateFormat: $('#dateRangeJavaDateFormat').val(),
+									timeFormat: $('#dateRangeJavaTimeFormat').val()
+								},
+								saveAction: ($('#itemCode').val() == null) ? 'new' : ($('#itemCode').val() != null && $('#itemName').html() != $('#savedDetectionNameInput').val()) ? 'new' : 'update'
+							};
+							saveItem(ajaxData);
+						},
+						onHide: function() {
+							$('#savedDetectionNameField').removeClass('error');
+						}
+					}).modal('show');
+				}
+			});
+
+			$('#querySearchInput').on("keypress", function(e) {
+				if (e.keyCode == 13) {
+					$('.run.query.button').click();
+					return false;
+				}
+			});
+
+			$('#indexDropdown').dropdown({});
+			$('#intervalUnitDropdown').dropdown({});
+			$('#minDocCountInput').on("change", function(e) {
+				if ($('#minDocCountInput').val() == '' || $('#minDocCount').val() < 0) {
+					$('#minDocCountInput').val(0);
+				}
+			});
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {});
+			
+			$('.run.query.button').on('click', function() {
+				loadData({
+					queryStr: (!$('#querySearchInput').val()) ? '*' : $('#querySearchInput').val(),
+					indexAlias: $('#indexDropdown').dropdown('get value'),
+					dateRange: $('#dateRangeInput').val(),
+					dateRangeFormat: $('#dateRangeJavaDateFormat').val() + ' ' + $('#dateRangeJavaTimeFormat').val(), 
+					intervalUnit: $('#intervalUnitDropdown').dropdown('get value'),
+					minDocCount: $('#minDocCountInput').val(),
+					scrollId: $('input[type=hidden][name=scrollId]').val()
+				});
+			});
+
+			$(window).scroll(function() {
+				var position = $(window).scrollTop();
+				var bottom = $(document).height() - $(window).height();
+				if (position == bottom) {
+					if ($('input[type=hidden][name=scrollBatchSize]').val() != undefined && $('input[type=hidden][name=scrollId]') != undefined) {
+						if ($('input[type=hidden][name=scrollBatchSize]').val() > 0) {
+							scrollData($('input[type=hidden][name=scrollId]').val());
+						}
+					}
+				}
+			});
+
+			/** 
+			 * initializing page...
+			 */
+
+			initialize();
+			loadData({
+				queryStr: '*',
+				indexAlias: $('#indexDropdown').dropdown('get value'),
+				dateRange: $('#dateRangeInput').val(),
+				dateRangeFormat: $('#dateRangeJavaDateFormat').val() + ' ' + $('#dateRangeJavaTimeFormat').val(), 
+				intervalUnit: $('#intervalUnitDropdown').dropdown('get value'),
+				minDocCount: $('#minDocCountInput').val(),
+				scrollId: $('input[type=hidden][name=scrollId]').val()
+			});
+		});
+
+		function initialize() {
+			setRelativeDateRange();
+		}
+
+		function openItem(ajaxData) {
+			$.ajax({
+				url: './explore/item/open',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				success: function(data, textStatus, jqXHR) {
+					$('#itemType').val(data.itemType);
+					if ('query' == data.itemType) {
+						$('#itemCode').val(data.organisationQuery.queryCode);
+						$('#itemName').html(data.organisationQuery.name);
+						$('#querySearchInput').val(data.organisationQuery.queryStr);
+						$('#dateRangeInput').val(data.organisationQuery.dateRange);
+						$('#dateRangeJavaDateFormat').val(data.organisationQuery.dateFormat);
+						$('#dateRangeJavaTimeFormat').val(data.organisationQuery.timeFormat);
+						$('#indexDropdown').dropdown('set selected', data.organisationQuery.indexAlias);
+						$('#intervalUnitDropdown').dropdown('set selected', data.organisationQuery.intervalUnit);
+						$('#minDocCountInput').val(data.organisationQuery.minDocCount);
+					}
+					else if ('detection' == data.itemType) {
+						$('#itemCode').val(data.organisationDetection.detCode);
+						$('#itemName').html(data.organisationDetection.name);
+						$('#querySearchInput').val(data.organisationDetection.queryStr);
+						$('#dateRangeInput').val(data.organisationDetection.dateRange);
+						$('#dateRangeJavaDateFormat').val(data.organisationDetection.dateFormat);
+						$('#dateRangeJavaTimeFormat').val(data.organisationDetection.timeFormat);
+						$('#indexDropdown').dropdown('set selected', data.organisationDetection.indexAlias);
+						$('#intervalUnitDropdown').dropdown('set selected', 'auto');
+						$('#minDocCountInput').val(0);
+					}
+					$('.run.query.button').click();
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+
+				}
+			});
+		}
+
+		function saveItem(ajaxData) {
+			$.ajax({
+				url: './explore/item/save',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				success: function(data, textStatus, jqXHR) {
+					$('#itemType').val(data.itemType);
+					if ('query' == data.itemType) {
+						$('#itemCode').val(data.organisationQuery.queryCode);
+						$('#itemName').html(data.organisationQuery.name);
+					}
+					else if ('detection' == data.itemType) {
+						$('#itemCode').val(data.organisationDetection.detCode);
+						$('#itemName').html(data.organisationDetection.name);
+					}
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+
+				}
+			});
+		}
+
+		function loadData(ajaxData) {
+			$.ajax({
+				url: './explore/data/load',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				beforeSend: function() {
+					$('.run.query.button').removeClass('ui teal run button').addClass('ui teal loading run button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					$('#dataUI').html(data);
+					$('.run.query.button').removeClass('ui teal loading run button').addClass('ui teal run button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function scrollData(scrollId) {
+			var data = {
+				scrollId: scrollId
+			}
+			$.ajax({
+				url: './explore/data/scroll',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(data),
+				success: function(data, textStatus, jqXHR) {
+					$('input[type=hidden][name=scrollBatchSize]').remove();
+					$('input[type=hidden][name=scrollId]').remove();
+					$('#searchResultsAccordion').append(data);
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+
+				}
+			});
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights?page=explore(orgCode=${orgCode})}">insights</a>
+			<div class="divider"> / </div>
+			<div class="active section">explore</div>
+		</div>
+		<div class="ui negative required detection message" style="display: none;">
+			<div class="content">A search criteria is required before you can make a detection.</div>
+		</div>
+
+		<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Explore</span>
+			</div>
+			<a class="item" id="newItem" title="New" style="padding-right: 10px;"><i class="plus square icon"></i></a>
+			<a class="ui dropdown item" id="openItem" title="Open" style="padding-right: 10px; z-index: 1000;"><i class="folder open icon"></i></a>
+			<a class="ui dropdown item" id="saveItem" title="Save as" style="padding-right: 10px; z-index: 1000;">
+				<i class="save icon"></i>
+				<div class="menu">
+					<div class="item" id="saveItemQuery">Query...</div>
+					<div class="item" id="saveItemDetection">Detection...</div>
+				</div>
+			</a>
+			<div class="right menu">
+				<input type="hidden" id="itemCode" value=""/>
+				<input type="hidden" id="itemType" value=""/>
+				<div class="item" style="padding-left: 5px;">
+					<div class="ui small label" style="margin-bottom: -10px; margin-top: -10px;" title="Name">
+						<span id="itemName">Untitled</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="ui attached menu">
+			<div class="ui item" style="flex-grow: 1;">
+				<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px;">
+					<input type="text" id="querySearchInput" title="Search" placeholder="Search...">
+					<div class="ui teal floating mini circular icon label" data-position="right center" data-inverted="" data-tooltip="Query language powered by Apache Lucene">
+						<i class="info icon" style="padding-right: 0.1em;"></i>
+					</div>
+				</div>
+			</div>
+			<div class="ui dropdown item" id="indexDropdown" title="Index">
+				<input type="hidden" name="index" th:value="${indices[0].aliasName}" />
+				<div class="default text">Select index</div>
+				<i class="dropdown icon"></i>
+				<div class="menu">
+					<div class="item" th:each="index,iter : ${indices}" th:attr="data-value=${index.aliasName}" th:text="${index.aliasName}"></div>
+					<div class="item" th:attr="data-value=exathreat-intel" th:text="exathreat-intel"></div>
+				</div>
+			</div>
+			<a class="item" style="width: 425px;">
+				<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px;">
+					<div th:replace="common/components/dateRangePicker.html :: field(value='')" th:remove="tag"></div>
+				</div>
+			</a>
+			<a class="item">
+				<button class="ui compact teal tiny run query button" type="button" style="margin: -10px;">Run</button>
+			</a>
+		</div>
+		<div class="ui bottom attached menu">
+			<div class="ui dropdown item" id="intervalUnitDropdown" title="Interval">
+				<input type="hidden" name="intervalUnit" id="intervalUnit" value="auto" />
+				<i class="clock outline icon"></i>
+				<div class="default text">Interval</div>
+				<i class="dropdown icon"></i>
+				<div class="menu">
+					<a class="item" data-value="auto">auto</a>
+					<a class="item" data-value="10s">10s</a>
+					<a class="item" data-value="30s">30s</a>
+					<a class="item" data-value="1m">1m</a>
+					<a class="item" data-value="5m">5m</a>
+					<a class="item" data-value="10m">10m</a>
+					<a class="item" data-value="30m">30m</a>
+					<a class="item" data-value="1h">1h</a>
+					<a class="item" data-value="3h">3h</a>
+					<a class="item" data-value="12h">12h</a>
+					<a class="item" data-value="1d">1d</a>
+					<a class="item" data-value="7d">7d</a>
+				</div>
+				<div class="ui teal floating mini circular icon label" data-position="right center" data-inverted="" data-tooltip="Interval per bucket" style="margin-top: 0.3em; margin-right: 1.2em; z-index: 1000;">
+					<i class="info icon" style="padding-right: 0.1em;"></i>
+				</div>
+			</div>
+			<div class="ui item">
+				<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px; width: 60px;">
+					<input type="number" min="0" value="0" id="minDocCountInput" title="Min doc count">
+					<div class="ui teal floating mini circular icon label" data-position="right center" data-inverted="" data-tooltip="Minimum document count per bucket">
+						<i class="info icon" style="padding-right: 0.1em;"></i>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="ui modal" id="modal-save-query">
+			<div class="header">Save query</div>
+			<div class="content">
+				<form class="ui form" autocomplete="off">
+					<div class="required field" id="savedQueryNameField">
+						<label>Query name</label>
+						<div class="ui left icon fluid input">
+							<i class="file code icon"></i>
+							<input type="text" id="savedQueryNameInput" value="Untitled" placeholder="Query name" />
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="actions">
+				<button class="ui compact cancel button" type="button">Cancel</button>
+				<button class="ui compact teal approve button" type="button">Save</button>
+			</div>
+		</div>
+
+		<div class="ui modal" id="modal-save-detection">
+			<div class="header">Save detection</div>
+			<div class="content">
+				<form class="ui form" autocomplete="off">
+					<div class="required field" id="savedDetectionNameField">
+						<label>Detection name</label>
+						<div class="ui left icon fluid input">
+							<i class="bullseye icon"></i>
+							<input type="text" id="savedDetectionNameInput" value="Untitled" placeholder="Detection name" />
+						</div>
+					</div>
+				</form>
+			</div>
+			<div class="actions">
+				<button class="ui compact cancel button" type="button">Cancel</button>
+				<button class="ui compact teal approve button" type="button">Save</button>
+			</div>
+		</div>
+
+		<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>		
+		<div id="dataUI"></div>
+</body>
+</html>

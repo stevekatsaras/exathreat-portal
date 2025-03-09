@@ -1,0 +1,60 @@
+buildscript {
+	repositories {
+		jcenter()
+		mavenCentral()
+		maven { url "https://repo.spring.io/release" }
+		maven { url "https://repo.spring.io/milestone" }
+		maven { url "https://repo.spring.io/snapshot" }
+	}
+}
+
+plugins {
+	id "io.spring.dependency-management" version "1.0.10.RELEASE"
+  id "org.springframework.boot" version "2.4.0"
+}
+
+apply plugin: "io.spring.dependency-management"
+apply plugin: "java"
+apply plugin: "org.springframework.boot"
+
+repositories {
+	jcenter()
+	mavenCentral()
+	maven { url "https://repo.spring.io/release" }
+	maven { url "https://repo.spring.io/milestone" }
+	maven { url "https://repo.spring.io/snapshot" }
+}
+
+group = projectGroup
+
+bootRun {
+	systemProperties = System.properties
+	sourceResources sourceSets.main
+}
+
+configurations {
+	implementation.exclude module: "spring-boot-starter-tomcat"
+	implementation.exclude group: "org.apache.tomcat"
+}
+
+dependencies {
+	annotationProcessor group: "org.projectlombok", name: "lombok"
+	implementation group: "com.okta.spring", name: "okta-spring-boot-starter", version: "1.5.1"
+	implementation group: "commons-validator", name: "commons-validator", version: "1.7"
+	implementation group: "mysql", name: "mysql-connector-java", version: "8.0.20"
+	implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client"
+	implementation group: "org.hibernate", name: "hibernate-java8", version: "5.4.17.Final"
+	implementation group: "org.projectlombok", name: "lombok"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-actuator"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-data-jpa"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-mail"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-security"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-thymeleaf"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-undertow"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-validation"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-web"
+	implementation group: "org.springframework.boot", name: "spring-boot-starter-webflux"
+	implementation group: "org.springframework.security", name: "spring-security-oauth2-client"
+	implementation group: "org.thymeleaf.extras", name: "thymeleaf-extras-springsecurity5"
+	runtimeOnly group: "org.springframework.boot", name: "spring-boot-devtools"
+}

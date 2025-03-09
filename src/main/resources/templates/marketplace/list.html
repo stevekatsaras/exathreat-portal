@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui success fade message" th:if="${param.userCreated}">
+			<div class="content">Your marketplace user profile has been created.</div>
+		</div>
+		<div th:if="${marketplaceUser == null}" th:remove="tag">
+			<div class="ui placeholder bottom attached segment">
+				<div class="ui tiny icon header">
+					<i class="user circle icon"></i>
+					Welcome to the marketplace. <br/>To get started, you need to create a user profile.
+				</div>
+				<div class="ui compact hyperlink teal button" type="button" th:attr="data-uri=@{/marketplace/my/user/create}">Create user profile</div>
+			</div>
+		</div>
+		<div th:unless="${marketplaceUser == null}" th:remove="tag">
+			<div class="ui top attached menu">
+				<div class="header item">
+					<span>Marketplace</span>
+				</div>
+				<div class="right menu">
+					<a class="item" title="My marketplace items" style="padding-right: 10px;" th:href="@{/marketplace/my/items}">
+						<i class="shopping cart icon"></i>
+					</a>
+				</div>
+			</div>
+			<div class="ui bottom attached segment">
+				<div class="ui divided items">
+					<div class="item">
+						<div class="ui small image">
+							<img th:src="@{/img/image.png}">
+						</div>
+						<div class="content">
+							<a class="header">Header</a>
+							<div class="meta">
+								<span>Description</span>
+							</div>
+							<div class="description">
+								<p>enrgineorginoernoigenirogenoir</p>
+							</div>
+							<div class="extra">
+								Additional Details
+							</div>
+						</div>
+					</div>
+					<div class="item">
+						<div class="ui small image">
+							<img th:src="@{/img/image.png}">
+						</div>
+						<div class="content">
+							<a class="header">Header</a>
+							<div class="meta">
+								<span>Description</span>
+							</div>
+							<div class="description">
+								<p>regoerniogeroignioernoigernoigeron</p>
+							</div>
+							<div class="extra">
+								Additional Details
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+
+
+
+		</div>
+	</div>
+</body>
+</html>

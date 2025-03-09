@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+			$("#myItemsTable").tablesort();
+		});
+
+		function confirmItemView(itemCode) {
+			$('#modal-view-' + itemCode).modal().modal('show');
+		}
+
+		function confirmItemDelete(itemCode, url) {
+			$('#modal-delete-' + itemCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/marketplace}">marketplace</a>
+			<div class="divider"> / </div>
+			<div class="active section">my-items</div>
+		</div>
+		<!-- <div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your detection has been added.</div>
+		</div> -->
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your marketplace item has been updated.</div>
+		</div>
+		<!-- <div class="ui warning fade message" th:if="${param.disabled}">
+			<div class="content">Your query has been disabled.</div>
+		</div> -->
+		<!-- <div class="ui success fade message" th:if="${param.enabled}">
+			<div class="content">Your query has been enabled.</div>
+		</div> -->
+		<!-- <div class="ui success fade message" th:if="${param.marketplaceAdded}">
+			<div class="content">Your detection has been added to your marketplace.</div>
+		</div> -->
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your marketplace item has been deleted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>My marketplace items</span>
+			</div>
+			<div class="right menu">
+				<!-- <a class="hyperlink item" title="Add detection" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a> -->
+			</div>
+		</div>
+		<table id="myItemsTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th>Name</th>
+				<th class="two wide">Category</th>
+				<th class="two wide">State</th>
+				<th class="one wide">Actions</th>
+			</thead>
+			<tbody>
+				<tr th:each="marketplaceItem,iter : ${marketplaceItems}">
+					<td>
+						<div th:switch="${marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+							<div th:case="Detection" th:remove="tag">
+								<i class="bullseye icon"></i>
+								<a href="#" th:text="${marketplaceItem.item.name}" th:attr="onclick=|confirmItemView('${marketplaceItem.itemCode}')|"></a>
+							</div>
+						</div>
+					</td>
+					<td>
+						<div th:switch="${marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+							<div th:case="Detection" th:remove="tag"><div class="ui small teal label">Detection</div></div>
+						</div>
+					</td>
+					<td>
+						<div th:switch="${marketplaceItem.state}" th:remove="tag">
+							<div th:case="Draft" th:remove="tag"><div class="ui small blue label">Draft</div></div>
+							<div th:case="Advertise" th:remove="tag"><div class="ui small green label">Advertise</div></div>
+							<div th:case="Trash" th:remove="tag"><div class="ui small red label">Trash</div></div>
+						</div>
+					</td>
+					<td>
+						<div class="ui tiny compact buttons">
+							<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/marketplace/my/items/{itemCode}/edit(itemCode=${marketplaceItem.itemCode})}">
+								<i class="edit icon"></i>
+							</button>
+							<div th:if="${marketplaceItem.state == 'Trash'}" th:remove="tag">
+								<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmItemDelete('${marketplaceItem.itemCode}', '@{/marketplace/my/items/{itemCode}/delete(itemCode=${marketplaceItem.itemCode})}')|">
+									<i class="trash icon"></i>
+								</button>
+							</div>
+						</div>
+						<div th:if="${marketplaceItem.state == 'Trash'}" th:remove="tag">
+							<div class="ui modal" th:id="'modal-delete-' + ${marketplaceItem.itemCode}">
+								<div class="header">Delete my marketplace item</div>
+								<div class="content">
+									<div th:switch="${marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+										<div th:case="Detection" th:remove="tag">
+											<span th:text="'Are you sure you want to delete your marketplace item: ' + ${marketplaceItem.item.name}" style="font-weight: bold;"></span>
+										</div>
+									</div>
+								</div>
+								<div class="actions">
+									<button class="ui compact cancel button" type="button">No</button>
+									<button class="ui compact red approve button" type="button">Yes</button>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="marketplaceItem,iter : ${marketplaceItems}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${marketplaceItem.itemCode}">
+				<div th:switch="${marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+					<div th:case="Detection" th:remove="tag">
+						<div class="header" th:text="${marketplaceItem.item.name}"></div>
+						<div class="content">
+							<table class="ui definition compact collapsing table">
+								<tbody>
+									<tr>
+										<td>Category</td>
+										<td>
+											<div th:switch="${marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+												<div th:case="Detection" th:remove="tag"><div class="ui small teal label">Detection</div></div>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>State</td>
+										<td>
+											<div th:switch="${marketplaceItem.state}" th:remove="tag">
+												<div th:case="Draft" th:remove="tag"><div class="ui small blue label">Draft</div></div>
+												<div th:case="Advertise" th:remove="tag"><div class="ui small green label">Advertise</div></div>
+												<div th:case="Trash" th:remove="tag"><div class="ui small red label">Trash</div></div>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>Description</td>
+										<td th:text="${marketplaceItem.item.description}"></td>
+									</tr>
+									<tr>
+										<td>Query</td>
+										<td th:text="${marketplaceItem.item.queryStr}"></td>
+									</tr>
+									<tr>
+										<td>Date range</td>
+										<td th:text="${marketplaceItem.item.dateRange}"></td>
+									</tr>
+									<tr>
+										<td>Severity</td>
+										<td>
+											<div th:switch="${marketplaceItem.item.severity}" th:remove="tag">
+												<div th:case="0"><div class="ui small green label">Low</div></div>
+												<div th:case="1"><div class="ui small yellow label">Medium</div></div>
+												<div th:case="2"><div class="ui small red label">High</div></div>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>Risk score</td>
+										<td>
+											<div th:if="${marketplaceItem.item.riskScore >= 0 and marketplaceItem.item.riskScore <= 35}" th:remove="tag">
+												<div class="ui small green label" th:text="${marketplaceItem.item.riskScore}"></div>
+											</div>
+											<div th:if="${marketplaceItem.item.riskScore >= 36 and marketplaceItem.item.riskScore <= 75}" th:remove="tag">
+												<div class="ui small yellow label" th:text="${marketplaceItem.item.riskScore}"></div>
+											</div>
+											<div th:if="${marketplaceItem.item.riskScore >= 76 and marketplaceItem.item.riskScore <= 100}" th:remove="tag">
+												<div class="ui small red label" th:text="${marketplaceItem.item.riskScore}"></div>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>Runs</td>
+										<td>
+											<div th:if="${marketplaceItem.item.runtime > 1}" th:remove="tag">
+												<span th:text="'every ' + ${marketplaceItem.item.runtime} + ' ' + ${marketplaceItem.item.runtimeUnit} + 's'"></span>
+											</div>
+											<div th:unless="${marketplaceItem.item.runtime > 1}" th:remove="tag">
+												<span th:text="'every ' + ${marketplaceItem.item.} + ' ' + ${marketplaceItem.item.runtimeUnit}"></span>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>References</td>
+										<td th:text="${marketplaceItem.item.references}"></td>
+									</tr>
+									<tr>
+										<td>Annotations</td>
+										<td th:text="${marketplaceItem.item.annotations}"></td>
+									</tr>
+									<tr>
+										<td>Tags</td>
+										<td>
+											<div th:each="tag,iter : ${#strings.arraySplit(marketplaceItem.item.tags, ',')}" th:remove="tag">
+												<span class="ui small label" th:text="${tag}"></span>
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<td>Created:</td>
+										<td th:text="${@timestampSupport.format(marketplaceItem.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+									</tr>
+									<tr>
+										<td>Modified:</td>
+										<td th:text="${@timestampSupport.format(marketplaceItem.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div class="actions">
+							<button class="ui compact cancel button" type="button">Cancel</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

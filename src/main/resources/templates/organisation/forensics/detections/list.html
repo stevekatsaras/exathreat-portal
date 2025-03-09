@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		var marketplaceUser = /*[[${marketplaceUser}]]*/ {};
+
+		$(document).ready(function() {
+			$("#organisationDetectionsTable").tablesort();
+		});
+
+		function confirmDetectionView(detCode) {
+			$('#modal-view-' + detCode).modal().modal('show');
+		}
+
+		function confirmDetectionAddMyMarketplace(detCode, url) {
+			if (marketplaceUser == null) {
+				$('#modal-marketplace-no-user-profile').modal().modal('show');
+			}
+			else {
+				window.location.href = url;
+			}
+		}
+
+		function confirmDetectionDelete(orgCode, detCode, url) {
+			$('#modal-delete-' + detCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/forensics?page=detections(orgCode=${orgCode})}">forensics</a>
+			<div class="divider"> / </div>
+			<div class="active section">detections</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your detection has been added.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your detection has been updated.</div>
+		</div>
+		<div class="ui warning fade message" th:if="${param.disabled}">
+			<div class="content">Your query has been disabled.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.enabled}">
+			<div class="content">Your query has been enabled.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.marketplaceAdded}">
+			<div class="content">Your detection has been added to your marketplace.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your detection has been deleted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Detections</span>
+			</div>
+			<div class="right menu">
+				<a class="hyperlink item" title="Add detection" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a>
+			</div>
+		</div>
+		<table id="organisationDetectionsTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th>Name</th>
+				<th class="one wide">Severity</th>
+				<th class="one wide">Version</th>
+				<th class="two wide">Runs</th>
+				<th class="two wide">Author</th>
+				<th class="one wide">Enabled</th>
+				<th class="one wide">Actions</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationDetection,iter : ${organisationDetections}">
+					<td>
+						<i class="bullseye icon"></i>
+						<a href="#" th:text="${organisationDetection.name}" th:attr="onclick=|confirmDetectionView('${organisationDetection.detCode}')|"></a>
+					</td>
+					<td>
+						<div th:switch="${organisationDetection.severity}" th:remove="tag">
+							<div th:case="0" th:remove="tag"><div class="ui small green label">Low</div></div>
+							<div th:case="1" th:remove="tag"><div class="ui small yellow label">Medium</div></div>
+							<div th:case="2" th:remove="tag"><div class="ui small red label">High</div></div>
+						</div>
+					</td>
+					<td>
+						<div th:text="${organisationDetection.version}"></div>
+					</td>
+					<td>
+						<div th:if="${organisationDetection.runtime > 1}" th:remove="tag">
+							<span th:text="'every ' + ${organisationDetection.runtime} + ' ' + ${organisationDetection.runtimeUnit} + 's'"></span>
+						</div>
+						<div th:unless="${organisationDetection.runtime > 1}" th:remove="tag">
+							<span th:text="'every ' + ${organisationDetection.runtime} + ' ' + ${organisationDetection.runtimeUnit}"></span>
+						</div>
+					</td>
+					<td>
+						<div th:text="${organisationDetection.organisationUser.givenName} + ' ' + ${organisationDetection.organisationUser.surname}"></div>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationDetection.enabled}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="yellow remove circle icon"></i></div>
+						</div>
+					</td>
+					<td>
+						<div class="ui tiny compact buttons">
+							<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections/{detCode}/edit(orgCode=${orgCode},detCode=${organisationDetection.detCode})}">
+								<i class="edit icon"></i>
+							</button>
+							<div th:switch="${organisationDetection.enabled}" th:remove="tag">
+								<div th:case="true" th:remove="tag">
+									<button class="ui compact tiny yellow icon hyperlink button" type="button" title="Disable" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections/{detCode}/disable(orgCode=${orgCode},detCode=${organisationDetection.detCode})}">
+										<i class="toggle off icon"></i>
+									</button>
+								</div>
+								<div th:case="false" th:remove="tag">
+									<button class="ui compact tiny green icon hyperlink button" type="button" title="Enable" th:attr="data-uri=@{/organisation/{orgCode}/forensics/detections/{detCode}/enable(orgCode=${orgCode},detCode=${organisationDetection.detCode})}">
+											<i class="toggle on icon"></i>
+									</button>
+								</div>
+							</div>
+							<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+								<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmDetectionDelete('${orgCode}', '${organisationDetection.detCode}', '@{/organisation/{orgCode}/forensics/detections/{detCode}/delete(orgCode=${orgCode},detCode=${organisationDetection.detCode})}')|">
+									<i class="trash icon"></i>
+								</button>
+							</div>
+							<button class="ui compact tiny icon button" type="button" title="Add to my marketplace items" th:attr="onclick=|confirmDetectionAddMyMarketplace('${organisationDetection.detCode}', '@{/organisation/{orgCode}/forensics/detections/{detCode}/marketplace/add(orgCode=${orgCode},detCode=${organisationDetection.detCode})}')|">
+								<i class="cart plus icon"></i>
+							</button>
+						</div>
+						<div class="ui modal" id="modal-marketplace-no-user-profile">
+							<div class="header">Unable to add detection to your marketplace items</div>
+							<div class="content">
+								<p>
+									We are unable to add this detection to your marketplace items.
+								</p>
+								<p>
+									We see that <b>you do not have a marketplace user profile</b> created.<br/>
+									A user profile is required to interact with the marketplace.
+							</div>
+							<div class="actions">
+								<button class="ui compact blue approve hyperlink button" type="button" th:attr="data-uri=@{/marketplace/my/user/create}">Create user profile</button>
+								<button class="ui compact cancel button" type="button">Cancel</button>
+							</div>
+						</div>
+						<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+							<div class="ui modal" th:id="'modal-delete-' + ${organisationDetection.detCode}">
+								<div class="header">Delete detection</div>
+								<div class="content">
+									<span th:text="'Are you sure you want to delete detection: ' + ${organisationDetection.name}" style="font-weight: bold;"></span>
+								</div>
+								<div class="actions">
+									<button class="ui compact cancel button" type="button">No</button>
+									<button class="ui compact red approve button" type="button">Yes</button>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationDetection,iter : ${organisationDetections}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationDetection.detCode}">
+				<div class="header" th:text="${organisationDetection.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Description</td>
+								<td th:text="${organisationDetection.description}"></td>
+							</tr>
+							<tr>
+								<td>Query</td>
+								<td th:text="${organisationDetection.queryStr}"></td>
+							</tr>
+							<tr>
+								<td>Index</td>
+								<td th:text="${organisationDetection.indexAlias}"></td>
+							</tr>
+							<tr>
+								<td>Date range</td>
+								<td th:text="${organisationDetection.dateRange}"></td>
+							</tr>
+							<tr>
+								<td>Severity</td>
+								<td>
+									<div th:switch="${organisationDetection.severity}" th:remove="tag">
+										<div th:case="0" th:remove="tag"><div class="ui small green label">Low</div></div>
+										<div th:case="1" th:remove="tag"><div class="ui small yellow label">Medium</div></div>
+										<div th:case="2" th:remove="tag"><div class="ui small red label">High</div></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Risk score</td>
+								<td>
+									<div th:if="${organisationDetection.riskScore >= 0 and organisationDetection.riskScore <= 35}" th:remove="tag">
+										<div class="ui small green label" th:text="${organisationDetection.riskScore}"></div>
+									</div>
+									<div th:if="${organisationDetection.riskScore >= 36 and organisationDetection.riskScore <= 75}" th:remove="tag">
+										<div class="ui small yellow label" th:text="${organisationDetection.riskScore}"></div>
+									</div>
+									<div th:if="${organisationDetection.riskScore >= 76 and organisationDetection.riskScore <= 100}" th:remove="tag">
+										<div class="ui small red label" th:text="${organisationDetection.riskScore}"></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Runs</td>
+								<td>
+									<div th:if="${organisationDetection.runtime > 1}" th:remove="tag">
+										<span th:text="'every ' + ${organisationDetection.runtime} + ' ' + ${organisationDetection.runtimeUnit} + 's'"></span>
+									</div>
+									<div th:unless="${organisationDetection.runtime > 1}" th:remove="tag">
+										<span th:text="'every ' + ${organisationDetection.runtime} + ' ' + ${organisationDetection.runtimeUnit}"></span>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Version</td>
+								<td th:text="${organisationDetection.version}"></td>
+							</tr>
+							<tr>
+								<td>Enabled:</td>
+								<td>
+									<div th:switch="${organisationDetection.enabled}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>References</td>
+								<td th:text="${organisationDetection.references}"></td>
+							</tr>
+							<tr>
+								<td>Annotations</td>
+								<td th:text="${organisationDetection.annotations}"></td>
+							</tr>
+							<tr>
+								<td>Tags</td>
+								<td>
+									<div th:each="tag,iter : ${#strings.arraySplit(organisationDetection.tags, ',')}" th:remove="tag">
+										<span class="ui small label" th:text="${tag}"></span>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Author</td>
+								<td th:text="${organisationDetection.organisationUser.givenName} + ' ' + ${organisationDetection.organisationUser.surname}"></td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationDetection.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationDetection.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

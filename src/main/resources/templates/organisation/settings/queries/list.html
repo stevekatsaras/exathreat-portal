@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationQueriesTable").tablesort();
+		});
+
+		function confirmQueryView(queryCode) {
+			$('#modal-view-' + queryCode).modal().modal('show');
+		}
+		
+		function confirmQueryClone(orgCode, queryCode, queryName, url) {
+			$('#modal-clone-' + queryCode).modal({
+				onApprove: function() {
+					if ($('#clonedQueryNameInput-' + queryCode).val() == '' || $('#clonedQueryNameInput-' + queryCode).val() == queryName) {
+						$('#clonedQueryNameField-' + queryCode).addClass('error');
+						return false;
+					}
+					else {
+						cloneQuery($('#clonedQueryNameInput-' + queryCode).val(), url);
+					}
+					return false;
+				},
+				onHide: function() {
+					$('#clonedQueryNameField-' + queryCode).removeClass('error');
+				},
+				onShow: function() {
+					$('#clonedQueryNameInput-' + queryCode).val(queryName + ' (clone)');
+				}
+			}).modal('show');
+		}
+		
+		function confirmQueryDelete(orgCode, queryCode, url) {
+			$('#modal-delete-' + queryCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+
+		function cloneQuery(queryName, url) {
+			var data = {
+				queryName: queryName
+			}
+			$.ajax({
+				url: url,
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(data),
+				success: function(data, textStatus, jqXHR) {
+					window.location.href = './queries?cloned';
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+
+				}
+			});
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=queries(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">queries</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.cloned}">
+			<div class="content">Your query has been cloned.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your query has been updated.</div>
+		</div>
+		<div class="ui warning fade message" th:if="${param.disabled}">
+			<div class="content">Your query has been disabled.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.enabled}">
+			<div class="content">Your query has been enabled.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your query has been deleted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Queries</span>
+			</div>
+		</div>
+		<table id="organisationQueriesTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="sorted ascending">Name</th>
+				<th class="two wide">Author</th>
+				<th class="one wide">Enabled</th>
+				<th class="one wide">Actions</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationQuery,iter : ${organisationQueries}">
+					<td>
+						<i class="file code icon"></i>
+						<a href="#" th:text="${organisationQuery.name}" th:attr="onclick=|confirmQueryView('${organisationQuery.queryCode}')|"></a>
+					</td>
+					<td>
+						<div th:text="${organisationQuery.organisationUser.givenName} + ' ' + ${organisationQuery.organisationUser.surname}"></div>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationQuery.enabled}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="yellow remove circle icon"></i></div>
+						</div>
+					</td>
+					<td>
+						<div class="ui tiny compact buttons">
+							<button class="ui compact tiny icon button" type="button" title="Clone" th:attr="onclick=|confirmQueryClone('${orgCode}', '${organisationQuery.queryCode}', '${organisationQuery.name}', '@{/organisation/{orgCode}/settings/queries/{queryCode}/clone(orgCode=${orgCode},queryCode=${organisationQuery.queryCode})}')|">
+								<i class="clone icon"></i>
+							</button>
+							<div th:if="${(loggedInUser.userRole == 'ADMIN') or (loggedInUser.userRole == 'USER' and (organisationQuery.organisationUser.userRole == 'USER' or organisationQuery.organisationUser.userRole == 'VIEWER')) or (loggedInUser.userRole == 'VIEWER' and organisationQuery.organisationUser.userRole == 'VIEWER')}" th:remove="tag">
+								<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/settings/queries/{queryCode}/edit(orgCode=${orgCode},queryCode=${organisationQuery.queryCode})}">
+									<i class="edit icon"></i>
+								</button>
+								<div th:switch="${organisationQuery.enabled}" th:remove="tag">
+									<div th:case="true" th:remove="tag">
+										<button class="ui compact tiny yellow icon hyperlink button" type="button" title="Disable" th:attr="data-uri=@{/organisation/{orgCode}/settings/queries/{queryCode}/disable(orgCode=${orgCode},queryCode=${organisationQuery.queryCode})}">
+											<i class="toggle off icon"></i>
+										</button>
+									</div>
+									<div th:case="false" th:remove="tag">
+										<button class="ui compact tiny green icon hyperlink button" type="button" title="Enable" th:attr="data-uri=@{/organisation/{orgCode}/settings/queries/{queryCode}/enable(orgCode=${orgCode},queryCode=${organisationQuery.queryCode})}">
+												<i class="toggle on icon"></i>
+										</button>
+									</div>
+								</div>
+								<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmQueryDelete('${orgCode}', '${organisationQuery.queryCode}', '@{/organisation/{orgCode}/settings/queries/{queryCode}/delete(orgCode=${orgCode},queryCode=${organisationQuery.queryCode})}')|">
+									<i class="trash icon"></i>
+								</button>
+							</div>
+						</div>
+						<div class="ui modal" th:id="'modal-clone-' + ${organisationQuery.queryCode}">
+							<div class="header">Clone query</div>
+							<div class="content">
+								<form class="ui form" autocomplete="off">
+									<div class="field" th:id="'clonedQueryNameField-' + ${organisationQuery.queryCode}">
+										<label>Query name</label>
+										<div class="ui labeled left icon fluid input">
+											<i class="file code icon"></i>
+											<input type="text" th:id="'clonedQueryNameInput-' + ${organisationQuery.queryCode}" placeholder="Query name" />
+											<div class="ui corner label"><i class="asterisk icon"></i></div>
+										</div>
+									</div>
+								</form>
+							</div>
+							<div class="actions">
+								<button class="ui compact cancel button" type="button">Cancel</button>
+								<button class="ui compact teal approve button" type="button">Clone</button>
+							</div>
+						</div>
+						<div th:if="${(loggedInUser.userRole == 'ADMIN') or (loggedInUser.userRole == 'USER' and (organisationQuery.organisationUser.userRole == 'USER' or organisationQuery.organisationUser.userRole == 'VIEWER')) or (loggedInUser.userRole == 'VIEWER' and organisationQuery.organisationUser.userRole == 'VIEWER')}" th:remove="tag">
+							<div class="ui modal" th:id="'modal-delete-' + ${organisationQuery.queryCode}">
+								<div class="header">Delete query</div>
+								<div class="content">
+									<span th:text="'Are you sure you want to delete query: ' + ${organisationQuery.name}" style="font-weight: bold;"></span>
+								</div>
+								<div class="actions">
+									<button class="ui compact cancel button" type="button">No</button>
+									<button class="ui compact red approve button" type="button">Yes</button>
+								</div>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationQuery,iter : ${organisationQueries}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationQuery.queryCode}">
+				<div class="header" th:text="${organisationQuery.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Query</td>
+								<td th:text="${organisationQuery.queryStr}"></td>
+							</tr>
+							<tr>
+								<td>Index</td>
+								<td th:text="${organisationQuery.indexAlias}"></td>
+							</tr>
+							<tr>
+								<td>Date range</td>
+								<td th:text="${organisationQuery.dateRange}"></td>
+							</tr>
+							<tr>
+								<td>Interval</td>
+								<td th:text="${organisationQuery.intervalUnit}"></td>
+							</tr>
+							<tr>
+								<td>Min doc count</td>
+								<td th:text="${organisationQuery.minDocCount}"></td>
+							</tr>
+							<tr>
+								<td>Enabled:</td>
+								<td>
+									<div th:switch="${organisationQuery.enabled}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Author</td>
+								<td th:text="${organisationQuery.organisationUser.givenName} + ' ' + ${organisationQuery.organisationUser.surname}"></td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationQuery.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationQuery.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

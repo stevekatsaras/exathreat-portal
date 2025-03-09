@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationUsersTable").tablesort();
+		});
+		function confirmUserView(userCode) {
+			$('#modal-view-' + userCode).modal().modal('show');
+		}
+		function confirmUserRemove(orgCode, userCode, url) {
+			$('#modal-remove-' + userCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=users(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">users</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your user has been added.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your user has been updated.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.resent}">
+			<div class="content">Your user invitation has been resent.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.removed}">
+			<div class="content">Your user has been removed.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Users</span>
+			</div>
+			<div class="right menu">
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<a class="hyperlink item" title="Add user" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/settings/users/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a>
+				</div>
+			</div>
+		</div>
+		<table id="organisationUsersTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="sorted ascending">Email</th>
+				<th>Given name</th>
+				<th>Surname</th>
+				<th class="one wide center aligned">Owner</th>
+				<th class="one wide">Role</th>
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<th class="one wide">Actions</th>
+				</div>
+			</thead>
+			<tbody>
+				<tr th:each="organisationUser,iter : ${organisationUsers}">
+					<td>
+						<i class="user icon"></i>
+						<a href="#" th:text="${organisationUser.emailAddress}" th:attr="onclick=|confirmUserView('${organisationUser.userCode}')|"></a>
+					</td>
+					<td>
+						<span th:text="${organisationUser.givenName}"></span>
+					</td>
+					<td>
+						<span th:text="${organisationUser.surname}"></span>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationUser.userOwner}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div> 
+						</div>
+					</td>
+					<td>
+						<div th:switch="${organisationUser.userRole}" th:remove="tag">
+							<div th:case="ADMIN" th:remove="tag"><div class="ui small green label" th:text="${organisationUser.userRole}"></div></div>
+							<div th:case="USER" th:remove="tag"><div class="ui small yellow label" th:text="${organisationUser.userRole}"></div></div>
+							<div th:case="VIEWER" th:remove="tag"><div class="ui small red label" th:text="${organisationUser.userRole}"></div></div>
+						</div>
+					</td>
+					<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+						<td>
+							<div class="ui tiny compact buttons">
+								<div th:if="${(loggedInUser.userRole == 'ADMIN') or (loggedInUser.userRole == 'USER' and (organisationUser.userRole == 'USER' or organisationUser.userRole == 'VIEWER'))}" th:remove="tag">
+									<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/settings/users/{userCode}/edit(orgCode=${orgCode},userCode=${organisationUser.userCode})}">
+										<i class="edit icon"></i>
+									</button>
+								</div>
+								<div th:if="${!organisationUser.userOwner}" th:remove="tag">
+									<button class="ui compact tiny icon hyperlink button" type="button" title="Resend invitation" th:attr="data-uri=@{/organisation/{orgCode}/settings/users/{userCode}/invitation/resend(orgCode=${orgCode},userCode=${organisationUser.userCode})}">
+										<i class="envelope open text icon"></i>
+									</button>
+								</div>
+								<div th:if="${loggedInUser.userRole == 'ADMIN' and loggedInUser.emailAddress != organisationUser.emailAddress and organisationUser.userOwner == false}" th:remove="tag">
+									<button class="ui compact tiny red icon button" type="button" title="Remove" th:attr="onclick=|confirmUserRemove('${orgCode}', '${organisationUser.userCode}', '@{/organisation/{orgCode}/settings/users/{userCode}/remove(orgCode=${orgCode},userCode=${organisationUser.userCode})}')|">
+										<i class="trash icon"></i>
+									</button>
+								</div>
+							</div>
+							<div th:if="${loggedInUser.userRole == 'ADMIN' and loggedInUser.emailAddress != organisationUser.emailAddress}" th:remove="tag">
+								<div class="ui modal" th:id="'modal-remove-' + ${organisationUser.userCode}">
+									<div class="header">Remove user</div>
+									<div class="content">
+										<span th:text="'Are you sure you want to remove user: ' + ${organisationUser.emailAddress}" style="font-weight: bold;"></span>
+									</div>
+									<div class="actions">
+										<button class="ui compact cancel button" type="button">No</button>
+										<button class="ui compact red approve button" type="button">Yes</button>
+									</div>
+								</div>
+							</div>
+						</td>
+					</div>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationUser,iter : ${organisationUsers}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationUser.userCode}">
+				<div class="header" th:text="${organisationUser.emailAddress}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Name:</td>
+								<td th:text="${organisationUser.givenName + ' ' + organisationUser.surname}"></td>
+							</tr>
+							<tr>
+								<td>Telephone:</td>
+								<td th:text="${organisationUser.telephone}"></td>
+							</tr>
+							<tr>
+								<td>Mobile:</td>
+								<td th:text="${organisationUser.mobile}"></td>
+							</tr>
+							<tr>
+								<td>Owner:</td>
+								<td>
+									<div th:switch="${organisationUser.userOwner}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div> 
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Role:</td>
+								<td>
+									<div th:switch="${organisationUser.userRole}" th:remove="tag">
+										<div th:case="ADMIN" th:remove="tag"><div class="ui small green label" th:text="${organisationUser.userRole}"></div></div>
+										<div th:case="USER" th:remove="tag"><div class="ui small yellow label" th:text="${organisationUser.userRole}"></div></div>
+										<div th:case="VIEWER" th:remove="tag"><div class="ui small red label" th:text="${organisationUser.userRole}"></div></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationUser.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationUser.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

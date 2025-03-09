@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#addVisualizeDashboardForm').submit(function () {
+				$('#addVisualizeDashboardFormDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights?page=visualize(orgCode=${orgCode})}">insights</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights/visualize(orgCode=${orgCode})}">visualize</a>
+			<div class="divider"> / </div>
+			<div class="active section">add</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('addVisualizeDashboardForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('addVisualizeDashboardForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Add visualization</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="addVisualizeDashboardForm" th:action="@{/organisation/{orgCode}/insights/visualize/add(orgCode=${orgCode})}" th:object="${addVisualizeDashboardForm}" method="post">
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationVisualization.name')} ? error" title="Name">
+					<label>Name</label>
+					<div class="ui left icon input">
+						<i class="eye icon"></i><input type="text" th:field="*{organisationVisualization.name}" placeholder="Name"/>
+					</div>
+				</div>
+				<div class="field" title="Description">
+					<label>Description</label>
+					<div class="ui left icon input">
+						<i class="file alternate icon"></i><input type="text" th:field="*{organisationVisualization.description}" placeholder="Description"/>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/insights/visualize(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="addVisualizeDashboardFormDimmer" style="display:none;">
+				<div class="ui text loader">Saving organisation visualization...</div>
+			</div>
+		</div>		
+	</div>
+</body>
+</html>

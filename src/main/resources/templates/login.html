@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+	<script type="text/javascript" src="https://global.oktacdn.com/okta-signin-widget/3.2.2/js/okta-sign-in.min.js"></script>
+
+	<link type="image/ico" rel="icon" th:href="@{/static/favicon.ico}">
+	<link type="text/css" rel="stylesheet" href="https://global.oktacdn.com/okta-signin-widget/3.2.2/css/okta-sign-in.min.css" />
+	<style>
+		#okta-signin-widget {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			min-height: 100vh;
+		}
+		#okta-sign-in .auth-divider {
+			display: none;
+		}
+		#okta-sign-in .primary-auth-form {
+			display: none;
+		}
+		#okta-sign-in .auth-footer {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<div id="okta-signin-widget"></div>
+	<script type="text/javascript" th:inline="javascript">
+	/*<![CDATA[*/
+		var config = {};
+		config.baseUrl = /*[[${oktaBaseUrl}]]*/ '{oktaBaseUrl}';
+		config.clientId = /*[[${oktaClientId}]]*/ '{oktaClientId}';
+		config.redirectUri = /*[[${redirectUri}]]*/ '{redirectUri}';
+		config.logo = 'img/logo.png';
+		config.authParams = {
+			issuer: /*[[${issuerUri}]]*/ '{issuerUri}',
+			responseType: 'code',
+			state: /*[[${state}]]*/ '{state}' || false,
+			nonce: /*[[${nonce}]]*/ '{nonce}',
+			scopes: /*[[${scopes}]]*/ '[scopes]',
+			display: 'page'
+		};
+		config.i18n = {
+			'en': {
+				'primaryauth.username.placeholder': 'Email'
+			}
+		};
+		config.features = {
+			registration: false,
+			rememberMe: false
+		};
+		config.idpDisplay = 'PRIMARY';
+		config.idps = [
+//			{type: 'FACEBOOK', id: /*[[${facebookId}]]*/ '{facebookId}'},
+			{type: 'GOOGLE', id: /*[[${googleId}]]*/ '{googleId}'},
+			{type: 'MICROSOFT', id: /*[[${microsoftId}]]*/ '{microsoftId}'}
+		];
+
+		var oktaSigninWidget = new OktaSignIn(config).renderEl({
+			el: '#okta-signin-widget'
+		}, function (res) {
+				//console.log(res);
+				if (res.status === 'SUCCESS') {
+					//console.log('do something with this session token ' + res.session.token);
+					//res.session.setCookieAndRedirect('https://example.com/dashboard');
+				}
+		}, function (err) {
+				//console.log(err)
+		});
+	/*]]>*/
+	</script>
+</body>
+</html>

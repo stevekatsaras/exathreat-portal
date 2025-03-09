@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<div th:fragment="noExData" th:remove="tag">
+		<div class="ui segment">
+			<div class="ui icon warning message">
+				<i class="database icon"></i>
+				<div class="content">
+					<div class="header">Oh no! It seems that we were unable to return any data.</div>
+				</div>
+			</div>
+			<div class="ui left aligned segment">
+				<table class="ui very basic compact collapsing selectable celled small table">
+					<tbody>
+						<tr>
+							<td>Error</td>
+							<td th:text="${error.type}"></td>
+						</tr>
+						<tr>
+							<td>Reason</td>
+							<td th:text="${error.reason}"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div th:fragment="exData" th:remove="tag">
+		<script type="text/javascript" th:inline="javascript">
+			$(document).ready(function() {
+				var jsDateFormat = /*[[${jsDateFormat}]]*/ '';
+				var jsTimeFormat = /*[[${jsTimeFormat}]]*/ '';
+				var timezone = /*[[${timezone}]]*/ '';
+
+				var dateRangeInfo = /*[[${exploreInsightsData.dateRangeInfo}]]*/ {};
+				var series = /*[[${exploreInsightsData.searchResults.series}]]*/ [];
+				var resultSizeTotal = /*[[${exploreInsightsData.searchResults.resultSizeTotal}]]*/ 0;
+				var tookInMs = /*[[${exploreInsightsData.searchResults.tookInMs}]]*/ 0;
+				
+				var chart = new ApexCharts(document.querySelector("#my_dataviz"), {
+					chart: {
+						events: {
+							zoomed: function(chartContext, { xaxis, yaxis }) {
+								var zoomedFrom = moment.tz(xaxis.min, "UTC").format(jsDateFormat + ' ' + jsTimeFormat);
+								var zoomedTo = moment.tz(xaxis.max, "UTC").format(jsDateFormat + ' ' + jsTimeFormat);
+
+								$('#absFromDateCalendar').calendar('set endDate', zoomedTo);
+								$('#absToDateCalendar').calendar('set startDate', zoomedFrom);
+
+								$('#absFromDateInput').val(zoomedFrom);
+								$('#absToDateInput').val(zoomedTo);
+
+								$('#dateRangeInput').html(zoomedFrom + ' to ' + zoomedTo);
+								$('.run.query.button').click();
+								return false;
+							}
+						},
+						height: 200,
+						toolbar: {
+							tools: {
+								download: false,
+								pan: false,
+								reset: false,
+								selection: false,
+								zoom: true,
+								zoomin: true,
+								zoomout: true
+							}
+						},
+						type: 'histogram',
+						width: '100%',
+						zoom: {
+							autoScaleYaxis: true
+						}
+					},
+					dataLabels: {
+						enabled: false
+					},
+					series: series,
+					subtitle: {
+						align: 'center',
+						margin: 0,
+						text: moment.tz(dateRangeInfo.gte, timezone).format(jsDateFormat + ' ' + jsTimeFormat) + ' - ' + moment.tz(dateRangeInfo.lte, timezone).format(jsDateFormat + ' ' + jsTimeFormat)
+					},
+					title: {
+						align: 'center',
+						margin: 0,
+						text: Number(resultSizeTotal).toLocaleString('en') + ' hits, ' + parseFloat(tookInMs / 1000).toFixed(2) + ' secs'
+					},
+					tooltip: {
+						x: {
+							format: dateRangeInfo.timeInterval.jvDtFormat
+						},
+						y: {
+							formatter: function(value) {
+								return (value == null) ? value : value.toFixed(0);
+							}
+						}
+					},
+					xaxis: {
+						labels: {
+							datetimeUTC: true,
+							style: {
+								fontSize: '11px'
+							}
+						},
+						title: {
+							offsetY: 5,
+							text: '@timestamp'
+						},
+						type: 'datetime'
+					},
+					yaxis: {
+						labels: {
+							formatter: function(value) {
+								return (value == null) ? value : value.toFixed(0);
+							}
+						},
+						title: {
+							text: 'Count'
+						}
+					}
+				});
+				chart.render();
+
+				$('#searchResultsAccordion').accordion({
+					duration: 100,
+					exclusive: false,
+					animateChildren: false
+				});
+
+				$('.filter.query.button').on('click', function() {
+					var key = $(this).data('key');
+					var value = $(this).data('value');
+					
+					var filter = (key !== 'event') ? 
+					key + ':' + ((typeof value === 'string') ? value.replace(/<?(\D|)em>/g, '') : value) : 
+					key + ':*';
+
+					var querySearchStr = $('#querySearchInput').val();
+					querySearchStr += (!querySearchStr) ? filter : ' AND ' + filter;
+
+					$('#querySearchInput').val(querySearchStr);
+				});
+			});
+		</script>
+		<style>
+			em {
+				background-color: yellow;
+				border-radius: 2px;
+				font-style: normal;
+				padding: 2px;
+			}
+		</style>
+		<div class="ui segment">
+			<div id="my_dataviz"></div>
+		</div>
+		<div class="ui fluid accordion" id="searchResultsAccordion" style="border: 1px solid rgba(34,36,38,.15); border-radius: .28571429rem;">
+			<div th:insert="this :: exResults" th:remove="tag"></div>
+		</div>
+	</div>
+	<div th:fragment="exResults" th:remove="tag">
+		<script type="text/javascript" th:inline="javascript">
+			$(document).ready(function() {
+				var searchResults = /*[[${exploreInsightsData.searchResults.results}]]*/ [];
+				$.each(searchResults, function(index, value) {
+					$('#tabmenu-' + value._id + ' .item').tab({});
+
+					var jsonStr = JSON.stringify(value).replace(/<\/?em>/g, '');
+					$('#jsonviewer-' + value._id).jsonViewer(JSON.parse(jsonStr), {rootCollapsable: false});
+				});
+			});
+		</script>
+		<div th:each="result,iter : ${exploreInsightsData.searchResults.results}" th:remove="tag">
+			<div class="title" style="border-top: 1px solid rgba(34,36,38,.15); display: flex; margin: 0; font-size: small; padding: .75em 1em;">
+				<i class="dropdown icon" style="margin-top: 3px;"></i>
+				<span th:text="${@timestampSupport.utcParse(result.get('@timestamp'), timezone, javaDateFormat + ' ' + javaTimeFormat)}"></span>
+				<span style="padding-left: 15px; padding-right: 15px;">|</span>
+				<div style="flex: 1; overflow: hidden;">
+					<div style="line-height: 1.4em; max-height: calc((1.4em * 3));" th:utext="${#strings.abbreviate(result.event, 500)}"></div>
+				</div>
+			</div>
+			<div class="content">
+				<div style="margin-left: 15px; margin-right: 15px;">
+					<div class="ui attached small tabular menu" th:id="'tabmenu-' + ${result._id}">
+						<a class="active item" th:attr="data-tab='tabtable-' + ${result._id}">Table</a>
+						<a class="item" th:attr="data-tab='tabjson-' + ${result._id}">JSON</a>
+					</div>
+					<div class="ui tab attached basic segment" th:attr="data-tab='tabtable-' + ${result._id}">
+						<table class="ui very basic compact collapsing selectable celled small table" style="margin-left: auto; margin-right: auto; table-layout: fixed; width: 100%;">
+							<tbody>
+								<div th:each="item : ${result}" th:remove="tag">
+									<tr>
+										<td class="one wide" style="text-align: center; vertical-align: top;">
+											<button class="ui compact mini icon filter query button" type="button" title="Add filter" style="background-color: transparent;" th:attr="data-key=${item.key}, data-value=${item.value}">
+												<i class="search plus icon"></i>
+											</button>
+										</td>
+										<td class="four wide" style="vertical-align: top; overflow-wrap: break-word;" th:text="${item.key}"></td>
+										<div th:if="${item.key == '@timestamp' || item.key == 'gatewayTime'}" th:remove="tag">
+											<td style="vertical-align: top; word-break: break-all;" th:utext="${@timestampSupport.utcParse(item.value, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+										</div>
+    								<div th:unless="${item.key == '@timestamp' || item.key == 'gatewayTime'}" th:remove="tag">
+											<td style="vertical-align: top; word-break: break-all;" th:utext="${item.value}"></td>
+										</div>
+									</tr>
+								</div>
+							</tbody>
+						</table>
+					</div>
+					<div class="ui tab attached basic segment" th:attr="data-tab='tabjson-' + ${result._id}">
+						<div style="width: 100%;">
+							<pre th:id="'jsonviewer-' + ${result._id}" style="line-height: 1.5; white-space: normal; word-break: break-all;"></pre>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<input type="hidden" name="scrollBatchSize" th:value="${exploreInsightsData.searchResults.batchSize}"/>
+		<input type="hidden" name="scrollId" th:value="${exploreInsightsData.searchResults.scrollId}"/>
+	</div>
+	<div th:fragment="exDataScroll" th:remove="tag">
+		<div th:insert="this :: exResults" th:remove="tag"></div>
+	</div>
+	<div th:fragment="noExDataScroll" th:remove="tag"></div>
+</body>
+</html>

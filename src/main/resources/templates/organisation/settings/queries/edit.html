@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {
+				if (dateRangeType == 'absolute') {
+					$('#organisationQuery\\.dateFormat').val(javaDateFormat);
+					$('#organisationQuery\\.timeFormat').val(javaTimeFormat);
+				}
+			});
+			
+			$('#indexDropdown').dropdown({});
+			$('#intervalUnitDropdown').dropdown({});
+			
+			$('#organisationQuery\\.minDocCount').on("change", function(e) {
+				if ($('#organisationQuery\\.minDocCount').val() == '' || $('#organisationQuery\\.minDocCount').val() < 0) {
+					$('#organisationQuery\\.minDocCount').val(0);
+				}
+			});
+			
+			$('#editQueriesSettingsForm').submit(function () {
+				$('#editQueriesSettingsFormDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=queries(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/queries(orgCode=${orgCode})}">queries</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editQueriesSettingsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editQueriesSettingsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit query</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editQueriesSettingsForm" th:action="@{/organisation/{orgCode}/settings/queries/{queryCode}/edit(orgCode=${orgCode},queryCode=${queryCode})}" th:object="${editQueriesSettingsForm}" method="post">
+				<input type="hidden" th:field="*{organisationQuery.dateFormat}"/>
+				<input type="hidden" th:field="*{organisationQuery.timeFormat}"/>
+				<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationQuery.name')} ? error" title="Name">
+					<label>Name</label>
+					<div class="ui left icon input">
+						<i class="file code icon"></i><input type="text" th:field="*{organisationQuery.name}" placeholder="Name" />
+					</div>
+				</div>
+				<div class="field" title="Query">
+					<label>Query</label>
+					<div class="ui input">
+						<textarea rows="2" th:field="*{organisationQuery.queryStr}"></textarea>
+						<div class="ui teal floating mini circular icon label" data-position="left center" data-inverted="" data-tooltip="Query language powered by Apache Lucene">
+							<i class="info icon"></i>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="four wide required field" th:classappend="${#fields.hasErrors('organisationQuery.indexAlias')} ? error" title="Index" style="z-index: 1001;">
+						<label>Index</label>
+						<div class="ui fluid search selection dropdown" id="indexDropdown">
+							<input type="hidden" th:field="*{organisationQuery.indexAlias}" /> <i class="dropdown icon"></i>
+							<div class="default text">Index</div>
+							<div class="menu">
+								<div class="item" th:each="index,iter : ${indices}" th:attr="data-value=${index.aliasName}" th:text="${index.aliasName}"></div>
+								<div class="item" th:attr="data-value=exathreat-intel" th:text="exathreat-intel"></div>
+							</div>
+						</div>
+					</div>
+					<div class="six wide required field" th:classappend="${#fields.hasErrors('organisationQuery.dateRange')} ? error" title="Date range">
+						<label>Date range</label>
+						<div class="ui input">
+							<div th:replace="common/components/dateRangePicker.html :: formField(name='organisationQuery.dateRange', value=*{organisationQuery.dateRange})" th:remove="tag"></div>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="two wide required field" th:classappend="${#fields.hasErrors('organisationQuery.intervalUnit')} ? error" title="Interval" style="z-index: 1000;">
+						<label>Interval</label>
+						<div class="ui fluid search selection dropdown" id="intervalUnitDropdown">
+							<input type="hidden" th:field="*{organisationQuery.intervalUnit}" /> <i class="dropdown icon"></i>
+							<div class="default text">Interval</div>
+							<div class="menu">
+								<a class="item" data-value="auto">auto</a>
+								<a class="item" data-value="10s">10s</a>
+								<a class="item" data-value="30s">30s</a>
+								<a class="item" data-value="1m">1m</a>
+								<a class="item" data-value="5m">5m</a>
+								<a class="item" data-value="10m">10m</a>
+								<a class="item" data-value="30m">30m</a>
+								<a class="item" data-value="1h">1h</a>
+								<a class="item" data-value="3h">3h</a>
+								<a class="item" data-value="12h">12h</a>
+								<a class="item" data-value="1d">1d</a>
+								<a class="item" data-value="7d">7d</a>
+							</div>
+							<div class="ui teal floating mini circular icon label" data-position="right center" data-inverted="" data-tooltip="Interval per bucket">
+								<i class="info icon"></i>
+							</div>
+						</div>
+					</div>
+					<div class="two wide required field" th:classappend="${#fields.hasErrors('organisationQuery.minDocCount')} ? error">
+						<label>Min doc count</label>
+						<div class="ui input">
+							<input type="number" min="0" th:field="*{organisationQuery.minDocCount}" placeholder="Min doc count"/>
+							<div class="ui teal floating mini circular icon label" data-position="right center" data-inverted="" data-tooltip="Minimum document count per bucket">
+								<i class="info icon"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/queries(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editQueriesSettingsFormDimmer" style="display:none;">
+				<div class="ui text loader">Updating organisation query...</div>
+			</div>
+		</div>
+	</div>
+
+	<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>	
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		var organisationInvoice = /*[[${editIndexSettingsForm.organisationInvoice}]]*/ {};
+
+		$(document).ready(function() {
+			$('#retentionDaysSlider').slider({
+				min: 5,
+				max: 60,
+				start: $('#organisationIndex\\.retentionDays').val(),
+				smooth: true,
+				onChange: function() {
+					updateSliderRetentionDays();
+				}
+			});
+
+			updateSliderRetentionDays();
+
+			$('#editIndexSettingsForm').submit(function () {
+				$('#editIndexSettingsFormDimmer').show();
+			});
+		});
+
+		function updateSliderRetentionDays() {
+			var retentionDaysVal = $('#retentionDaysSlider').slider('get value');
+			var retentionDate = moment(organisationInvoice.periodFrom).subtract(retentionDaysVal, "days");
+
+			$('.retention.message').html(
+				'<p>All data will be retained during your current invoice cycle of: ' + moment(organisationInvoice.periodFrom).format('Do MMM YYYY') + ' to ' + moment(organisationInvoice.periodTo).format('Do MMM YYYY') + '.<p/>' +
+				'<p>Purgeable data is calculated by substracting your invoice commencement date from the retention.<br/>' +
+				'This is a rolling retention and is recalculated as your cycle through each invoice period.<p/>' + 
+				'<p>E.g. ' + moment(organisationInvoice.periodFrom).format('Do MMM YYYY') + ' minus ' + retentionDaysVal + ' days equals ' + retentionDate.format('Do MMM YYYY') + '.<p/>' + 
+				'<p>All data older than ' + retentionDate.format('Do MMM YYYY') + ' will be purged.</p>');
+
+			$('#organisationIndex\\.retentionDays').val(retentionDaysVal);
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=indexes(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/indexes(orgCode=${orgCode})}">indexes</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editIndexSettingsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editIndexSettingsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit index</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editIndexSettingsForm" th:action="@{/organisation/{orgCode}/settings/indexes/{indCode}/edit(orgCode=${orgCode},indCode=${indCode})}" th:object="${editIndexSettingsForm}" method="post">				
+				<div class="field" title="Name">
+					<label>Name</label>
+					<div class="ui left icon input">
+						<i class="list alternate outline  icon"></i><input type="text" th:field="*{organisationIndex.aliasName}" placeholder="Name" readonly/>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" title="Retention">
+						<label>Retention (in days)</label>
+						<div class="ui bottom aligned labeled ticked small slider" id="retentionDaysSlider" style="margin-top: -10px;"></div>
+						<input type="hidden" th:field="*{organisationIndex.retentionDays}"/>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field">
+						<div class="ui tiny blue retention message" style="font-weight: bold;"></div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/indexes(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editIndexSettingsFormDimmer" style="display:none;">
+				<div class="ui text loader">Saving organisation index...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

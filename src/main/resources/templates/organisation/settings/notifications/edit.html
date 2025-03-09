@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#notificationTypeDropdown').dropdown({
+				onChange: function(value, text, $selectedItem) {
+					setNotificationSettings(value);
+				}
+			});
+
+			$('#editNotificationsSettingsForm').submit(function (event) {
+				var action = event.originalEvent.submitter.innerText;
+				$('#action').val(action);
+				$('#editNotificationsSettingsFormDimmer' + action).show();
+			});
+
+			setNotificationSettings($('#notificationTypeDropdown').dropdown('get value'));
+		});
+
+		function setNotificationSettings(notification) {
+			if (notification == 'email') {
+				$('#googleSettings').hide();
+				$('#telegramSettings').hide();
+				$('#emailSettings').show();
+			}
+			else if (notification == 'google') {
+				$('#emailSettings').hide();
+				$('#telegramSettings').hide();
+				$('#googleSettings').show();
+			}
+			else if (notification == 'telegram') {
+				$('#emailSettings').hide();
+				$('#googleSettings').hide();
+				$('#telegramSettings').show();
+			}
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=notifications(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/notifications(orgCode=${orgCode})}">notifications</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editNotificationsSettingsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editNotificationsSettingsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui success fade message" th:if="${tested}">
+			<div class="content">Your notification has been tested.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit notification</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editNotificationsSettingsForm" th:action="@{/organisation/{orgCode}/settings/notifications/{notCode}/edit(orgCode=${orgCode},notCode=${notCode})}" th:object="${editNotificationsSettingsForm}" method="post">
+				<input type="hidden" th:field="*{action}"/>
+				
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationNotification.name')} ? error" title="Name">
+					<label>Name</label>
+					<div class="ui left icon input">
+						<i class="bell icon"></i><input type="text" th:field="*{organisationNotification.name}" placeholder="Name"/>
+					</div>
+				</div>
+				<div class="field" title="Description">
+					<label>Description</label>
+					<div class="ui left icon input">
+						<i class="file alternate icon"></i><input type="text" th:field="*{organisationNotification.description}" placeholder="Description"/>
+					</div>
+				</div>
+				<div class="field">
+					<div class="eight wide required field" th:classappend="${#fields.hasErrors('organisationNotification.type')} ? error" title="Type">
+						<label>Type</label>
+						<div class="ui fluid search selection dropdown" id="notificationTypeDropdown">
+							<input type="hidden" th:field="*{organisationNotification.type}" /> <i class="dropdown icon"></i>
+							<div class="default text">Type</div>
+							<div class="menu">
+								<div class="item" th:each="notificationType,iter : ${notificationTypes}" th:attr="data-value=${notificationType.type}" th:text="${notificationType.label}"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="field" id="emailSettings" style="display: none; margin-top: 30px;">
+					<h4 class="ui dividing header">Email settings</h4>
+					<div class="required field" th:classappend="${#fields.hasErrors('organisationNotification.settings[emailAddresses]')} ? error" title="Addresses">
+						<label>Addresses</label>
+						<textarea rows="2" th:field="*{organisationNotification.settings[emailAddresses]}"></textarea>
+						<span>You can enter multiple email addresses using a ";" separator</span>
+					</div>
+				</div>
+				<div class="field" id="googleSettings" style="display: none; margin-top: 30px;">
+					<h4 class="ui dividing header">Google Chat settings</h4>
+					<div class="required field" th:classappend="${#fields.hasErrors('organisationNotification.settings[googleChatWebhookUrl]')} ? error" title="Webhook URL">
+						<label>Webhook URL</label>
+						<div class="ui left icon input">
+							<i class="linkify icon"></i><input type="text" th:field="*{organisationNotification.settings[googleChatWebhookUrl]}" placeholder="Webhook URL"/>
+						</div>
+					</div>
+				</div>
+				<div class="field" id="telegramSettings" style="display: none; margin-top: 30px;">
+					<h4 class="ui dividing header">Telegram settings</h4>
+					<div class="required field" th:classappend="${#fields.hasErrors('organisationNotification.settings[telegramBotApiToken]')} ? error" title="Bot API Token">
+						<label>Bot API Token</label>
+						<div class="ui left icon input">
+							<i class="key icon"></i><input type="text" th:field="*{organisationNotification.settings[telegramBotApiToken]}" placeholder="Bot API Token"/>
+						</div>
+					</div>
+					<div class="required field" th:classappend="${#fields.hasErrors('organisationNotification.settings[telegramBotChatID]')} ? error" title="Bot Chat ID">
+						<label>Bot Chat ID</label>
+						<div class="ui left icon input">
+							<i class="users icon"></i><input type="text" th:field="*{organisationNotification.settings[telegramBotChatID]}" placeholder="Bot Chat ID"/>
+						</div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/notifications(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact secondary button" type="submit">Test</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editNotificationsSettingsFormDimmerTest" style="display:none;">
+				<div class="ui text loader">Testing organisation notification...</div>
+			</div>
+			<div class="ui active inverted dimmer" id="editNotificationsSettingsFormDimmerSave" style="display:none;">
+				<div class="ui text loader">Saving organisation notification...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#activateOrganisation').submit(function () {
+				$('#organisationDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<div class="active section">activate</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span th:text="${currentOrganisation.orgName}"></span>
+			</div>
+		</div>
+		<div class="ui placeholder bottom attached segment">
+			<div class="ui tiny icon header">
+				<i class="building icon"></i>
+				This organisation has been discontinued.
+			</div>
+			<form class="ui form" id="activateOrganisation" th:action="@{/organisation/{orgCode}/activate(orgCode=${orgCode})}" method="post">
+				<button class="ui compact teal button" type="submit">Activate organisation</button>
+			</form>
+			<div class="ui active inverted dimmer" id="organisationDimmer" style="display:none;">
+				<div class="ui text loader">Activating organisation...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

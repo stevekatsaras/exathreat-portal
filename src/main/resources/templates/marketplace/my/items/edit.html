@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+			$('#itemStateDropdown').dropdown({});
+
+			$('#editMyItemsMarketplaceForm').submit(function () {
+				$('#editMyItemsMarketplaceFormDimmer').show();
+			});
+
+			var marketplaceItem = /*[[${editMyItemsMarketplaceForm.marketplaceItem}]]*/ {};
+			if (marketplaceItem.marketplaceCategory.name == 'Detection') {
+				// $('#organisationDetection\\.dateRange').popup({
+				// 	closable: true,
+    		// 	popup: '#dateRangePopup', 
+				// 	position: 'bottom left',
+				// 	on: 'click',
+				// 	onShow: function() {					
+				// 		$('#dateRangeTabs .item').tab({});
+					
+				// 		$('#relPeriodInput').on("change", function(e) {
+				// 			if ($('#relPeriodInput').val() < 1) {
+				// 				$('#relPeriodInput').val(1);
+				// 			}
+				// 		});
+			
+				// 		$('#relPeriodUnitDropdown').dropdown();
+
+				// 		$('.set.reldate.button').on('click', function() {
+				// 			setRelativeDateRange();
+				// 			$('#organisationDetection\\.dateRange').popup('hide');
+				// 		});
+
+				// 		$('#absFromDateCalendar').calendar({
+				// 			ampm: false,
+				// 			endCalendar: $('#absToDateCalendar'),
+				// 			today: true,
+				// 			type: 'datetime',
+				// 			formatter: {
+				// 				datetime: function (datetime, settings) {
+				// 					if (!datetime) {
+				// 						return '';
+				// 					}
+				// 					return moment(datetime).format(jsDateFormat + ' ' + jsTimeFormat);
+      	// 				}
+    		// 			}
+				// 		});
+
+				// 		$('#absToDateCalendar').calendar({
+				// 			ampm: false,
+				// 			startCalendar: $('#absFromDateCalendar'),
+				// 			today: true,
+				// 			type: 'datetime',
+				// 			formatter: {
+				// 				datetime: function (datetime, settings) {
+				// 					if (!datetime) {
+				// 						return '';
+				// 					}
+				// 					return moment(datetime).format(jsDateFormat + ' ' + jsTimeFormat);
+      	// 				}
+    		// 			}
+				// 		});
+
+				// 		$('.set.absdate.button').on('click', function() {
+				// 			if ($('#absFromDateInput').val().length > 0 && $('#absToDateInput').val().length > 0) {
+				// 				setAbsoluteDateRange();
+				// 				$('#organisationDetection\\.dateRange').popup('hide');
+				// 			}
+				// 			else if ($('#absFromDateInput').val().length === 0) {
+				// 				$('#absFromDateCalendar').calendar('popup', 'show');
+				// 			}
+				// 			else if ($('#absToDateInput').val().length === 0) {
+				// 				$('#absToDateCalendar').calendar('popup', 'show');
+				// 			}
+				// 		});
+				// 	}
+				// });
+
+				$('#detectionSeverityDropdown').dropdown();
+				$('#detectionRiskScoreSlider').slider({
+					min: 0,
+					max: 100,
+					start: marketplaceItem.item.riskScore,
+					smooth: true,
+					onChange: function() {
+						// updateSliderRiskScore();
+					}
+				});
+
+				$('#marketplaceItem\\.itemruntime').on("change", function(e) {
+					if ($('#marketplaceItem\\.itemruntime').val() == '' || $('#marketplaceItem\\.itemruntime').val() < 1) {
+						$('#marketplaceItem\\.itemruntime').val(1);
+					}
+				});
+
+				$('#detectionRuntimeUnitDropdown').dropdown();
+			}
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/marketplace}">marketplace</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/marketplace/my/items}">my-items</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editMyItemsMarketplaceForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editMyItemsMarketplaceForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit my marketplace item</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editMyItemsMarketplaceForm" th:action="@{/marketplace/my/items/{itemCode}/edit(itemCode=${itemCode})}" th:object="${editMyItemsMarketplaceForm}" method="post">
+				<div class="fields">
+					<div class="two wide required field" th:classappend="${#fields.hasErrors('marketplaceItem.state')} ? error" title="State">
+						<label>State</label>
+						<div class="ui fluid search selection dropdown" id="itemStateDropdown">
+							<input type="hidden" th:field="*{marketplaceItem.state}" /> <i class="dropdown icon"></i>
+							<div class="default text">State</div>
+							<div class="menu">
+								<div class="item" th:each="itemState,iter : ${itemStates}" th:attr="data-value=${itemState}" th:text="${itemState}"></div>
+							</div>
+						</div>
+					</div>					
+				</div>
+				<div th:switch="${editMyItemsMarketplaceForm.marketplaceItem.marketplaceCategory.name}" th:remove="tag">
+					<div th:case="Detection" th:remove="tag">
+						<div class="field" id="detectionSettings" style="margin-top: 30px;">
+							<h4 class="ui dividing header">Detection settings</h4>
+						</div>
+						<div class="required field" th:classappend="${#fields.hasErrors('marketplaceItem.item[name]')} ? error" title="Name">
+							<label>Name</label>
+							<div class="ui left icon input">
+								<i class="eye icon"></i><input type="text" th:field="*{marketplaceItem.item[name]}" placeholder="Name"/>
+							</div>
+						</div>
+						<div class="field" title="Description">
+							<label>Description</label>
+							<div class="ui left icon input">
+								<i class="file alternate icon"></i><input type="text" th:field="*{marketplaceItem.item[description]}" placeholder="Description"/>
+							</div>
+						</div>
+						<div class="required field" th:classappend="${#fields.hasErrors('marketplaceItem.item[queryStr]')} ? error" title="Query">
+							<label>Query</label>
+							<div class="ui input">
+								<textarea rows="2" th:field="*{marketplaceItem.item[queryStr]}"></textarea>
+								<div class="ui teal floating mini circular icon label" data-position="left center" data-inverted="" data-tooltip="Query language powered by Apache Lucene">
+									<i class="info icon"></i>
+								</div>
+							</div>
+						</div>
+						<div class="six wide required field" th:classappend="${#fields.hasErrors('marketplaceItem.item[dateRange]')} ? error" title="Date range">
+							<label>Date range</label>
+							<div class="ui input">
+								<input type="text" th:field="*{marketplaceItem.item[dateRange]}" placeholder="Date range" readonly />
+							</div>
+						</div>
+						<div class="fields">
+							<div class="two wide required field" title="Severity">
+								<label>Severity</label>
+								<div class="ui fluid search selection dropdown" id="detectionSeverityDropdown">
+									<input type="hidden" th:field="*{marketplaceItem.item[severity]}" /> <i class="dropdown icon"></i>
+									<div class="default text">Severity</div>
+									<div class="menu">
+										<a class="item" data-value="0">Low</a>
+										<a class="item" data-value="1">Medium</a>
+										<a class="item" data-value="2">High</a>
+									</div>
+								</div>
+							</div>
+							<div class="eight wide field" title="Risk score">
+								<label>Risk score</label>
+								<div class="ui bottom aligned labeled ticked small slider" id="detectionRiskScoreSlider" style="margin-top: -10px;"></div>
+								<input type="hidden" th:field="*{marketplaceItem.item[riskScore]}"/>
+							</div>
+						</div>
+						<div class="fields">
+							<div class="two wide field">
+								<label>Run every</label>
+								<div class="ui input">
+									<input type="number" min="1" th:field="*{marketplaceItem.item[runtime]}" />
+								</div>
+							</div>
+							<div class="two wide field">
+								<label>&nbsp;</label>
+								<div class="ui fluid search selection dropdown" id="detectionRuntimeUnitDropdown">
+									<input type="hidden" th:field="*{marketplaceItem.item[runtimeUnit]}" /> <i class="dropdown icon"></i>
+									<div class="default text">Runtime</div>
+									<div class="menu">
+										<a class="item" data-value="minute">minutes</a>
+										<a class="item" data-value="hour">hours</a>
+										<a class="item" data-value="day">days</a>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="fields">
+							<div class="eight wide field" title="References">
+								<label>References</label>
+								<div class="ui input">
+									<textarea rows="2" th:field="*{marketplaceItem.item[references]}"></textarea>
+								</div>
+							</div>
+							<div class="eight wide field" title="Annotations">
+								<label>Annotations</label>
+								<div class="ui input">
+									<textarea rows="2" th:field="*{marketplaceItem.item[annotations]}"></textarea>
+								</div>
+							</div>
+						</div>
+						<div class="field" title="Tags">
+							<label>Tags</label>
+							<div class="ui left input">
+								<input type="text" th:field="*{marketplaceItem.item[tags]}" placeholder="Tags"/>
+							</div>
+							<span>You can enter multiple tags by using a comma separator</span>
+						</div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/marketplace/my/items}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editMyItemsMarketplaceFormDimmer" style="display:none;">
+				<div class="ui text loader">Updating my marketplace item...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

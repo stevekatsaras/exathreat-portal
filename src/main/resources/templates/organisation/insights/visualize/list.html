@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		$(document).ready(function() {
+			$("#organisationVisualizationsTable").tablesort();
+		});
+
+		function confirmVisualizationView(vizCode) {
+			$('#modal-view-' + vizCode).modal().modal('show');
+		}
+		
+		function confirmVisualizationDelete(orgCode, vizCode, url) {
+			$('#modal-delete-' + vizCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights?page=visualize(orgCode=${orgCode})}">insights</a>
+			<div class="divider"> / </div>
+			<div class="active section">visualize</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your visualization has been added.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your visualization has been updated.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your visualization has been deleted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Visualize</span>
+			</div>
+			<div class="right menu">
+				<a class="hyperlink item" title="Add visualization" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/insights/visualize/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a>
+			</div>
+		</div>
+		<table id="organisationVisualizationsTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="sorted ascending">Name</th>
+				<th class="four wide">Date range</th>
+				<th class="two wide">Refresh</th>
+				<th class="two wide">Author</th>
+				<th class="one wide">Actions</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationVisualization,iter : ${organisationVisualizations}">
+					<td>
+						<i class="eye icon"></i>
+						<a href="#" th:text="${organisationVisualization.name}" th:attr="onclick=|confirmVisualizationView('${organisationVisualization.vizCode}')|"></a>
+					</td>
+					<td>
+						<div th:text="${organisationVisualization.dateRange}"></div>
+					</td>
+					<td>
+						<div th:text="${organisationVisualization.refresh}"></div>
+					</td>
+					<td>
+						<div th:text="${organisationVisualization.organisationUser.givenName} + ' ' + ${organisationVisualization.organisationUser.surname}"></div>
+					</td>
+					<td>
+						<div class="ui tiny compact buttons">
+							<button class="ui compact tiny icon hyperlink button" type="button" title="Run" th:attr="data-uri=@{/organisation/{orgCode}/insights/visualize/{vizCode}/run(orgCode=${orgCode},vizCode=${organisationVisualization.vizCode})}">
+								<i class="eye icon"></i>
+							</button>
+							<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/insights/visualize/{vizCode}/edit(orgCode=${orgCode},vizCode=${organisationVisualization.vizCode})}">
+								<i class="edit icon"></i>
+							</button>
+							<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmVisualizationDelete('${orgCode}', '${organisationVisualization.vizCode}', '@{/organisation/{orgCode}/insights/visualize/{vizCode}/delete(orgCode=${orgCode},vizCode=${organisationVisualization.vizCode})}')|">
+								<i class="trash icon"></i>
+							</button>
+						</div>
+						<div class="ui modal" th:id="'modal-delete-' + ${organisationVisualization.vizCode}">
+							<div class="header">Delete visualization</div>
+							<div class="content">
+								<span th:text="'Are you sure you want to delete visualization: ' + ${organisationVisualization.name}" style="font-weight: bold;"></span>
+							</div>
+							<div class="actions">
+								<button class="ui compact cancel button" type="button">No</button>
+								<button class="ui compact red approve button" type="button">Yes</button>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationVisualization,iter : ${organisationVisualizations}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationVisualization.vizCode}">
+				<div class="header" th:text="${organisationVisualization.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Description:</td>
+								<td th:text="${organisationVisualization.description}"></td>
+							</tr>
+							<tr>
+								<td>Date range</td>
+								<td th:text="${organisationVisualization.dateRange}"></td>
+							</tr>
+							<tr>
+								<td>Refresh</td>
+								<td th:text="${organisationVisualization.refresh}"></td>
+							</tr>
+							<tr>
+								<td>Author</td>
+								<td th:text="${organisationVisualization.organisationUser.givenName} + ' ' + ${organisationVisualization.organisationUser.surname}"></td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationVisualization.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationVisualization.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

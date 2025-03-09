@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body style="background-color: white; margin: 0; max-height: 100%;">
+	<div style="background-color: white; margin: 0; padding-top: 20px; padding-bottom: 20px; width: 100%;">
+		<div style="background-color: white; margin: 0 auto; width: 90%;">
+			<img src="logo.png" th:src="'cid:' + ${logo}" width="200" style="width: 200px;" />
+		</div>
+		<div style="background-color: #efefef; margin-top: 20px; padding: 0; width: 100%;">
+			<div style="margin: 0 auto; padding-top: 20px; padding-bottom: 20px; width: 90%;">
+				<div>
+					<h2>Test notification!</h2>
+				</div>
+				<div>
+					<p style="line-height: 1.5em;">
+						This is a test notification from Exathreat, via the following channel:
+					</p>
+				</div>
+				<div>
+					<table style="background-color: white; line-height: 1.5em; padding: 15px;">
+						<tr>
+							<td style="font-weight: bold; width: 125px;">Organisation:</td>
+							<td>
+								<div th:text="${organisation.orgName}"></div>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-weight: bold; width: 125px;">Channel:</td>
+							<td>
+								<div th:text="${organisationNotification.name}"></div>
+							</td>
+						</tr>
+						<tr>
+							<td style="font-weight: bold; width: 125px;">Portal:</td>
+							<td>
+								<a th:href="${portalUrl}" th:text="${portalUrl}"></a>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<div>
+					<p style="line-height: 1.5em;">
+						Please ignore, as someone is performing a test to ensure this notification works.<br/>
+						If you do not wish to receive these notifications, please contact your account administrator.
+					</p>
+				</div>
+				<div>
+					<p style="line-height: 1.5em;">
+						Cheers!<br/>
+						The Exathreat team.
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

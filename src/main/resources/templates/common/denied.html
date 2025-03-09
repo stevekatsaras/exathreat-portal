@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+</head>
+<body>
+	<div style="padding:55px;">
+		<div class="ui raised container segment" style="width:50%;">
+			<div class="ui icon warning message">
+				<i class="lock icon"></i>
+				<div class="content">
+					<div class="header">Oops! It appears something has not allowed you to proceed.</div>
+					<p>
+						We have encountered an access issue.
+					</p>
+				</div>
+			</div>
+			<div class="ui left aligned segment">
+				<span>Access denied</span>
+				<p />
+				<p>
+					Please click the back button and try again.
+					<br />
+					If the problem persists, please feel free to reach out to us.
+				</p>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

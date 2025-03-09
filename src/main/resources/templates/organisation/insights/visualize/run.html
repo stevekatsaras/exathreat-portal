@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		var gridStack;
+		var chartsArr = [];
+		var refreshInterval;
+
+		$(document).ready(function() {
+			$('form').submit(false);
+
+			$('.save.dashboard.item').click(function() {
+				saveDashboard({
+					dateRange: $('#dateRange').val(),
+					dateFormat: $('#dateFormat').val(), 
+					timeFormat: $('#timeFormat').val(),
+					refreshUnit: $('#refreshDropdown').dropdown('get value')
+				});
+			});
+
+			$('#refreshDropdown').dropdown({
+				onChange: function(value, text, $selectedItem) {
+					doRefreshTimer(value);
+				}
+			});
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {
+				$('#dateRange').val(dateRangeValue);
+				
+				if (dateRangeType == 'absolute') {
+					$('#dateFormat').val(javaDateFormat);
+					$('#timeFormat').val(javaTimeFormat);
+				}
+
+				doRefreshTimer($('#refreshDropdown').dropdown('get value'));
+			});
+
+			/** 
+			 * initializing page...
+			 */
+
+			var organisationVisualization = /*[[${organisationVisualization}]]*/ {};
+			initCharts(organisationVisualization);
+			doRefreshTimer($('#refreshDropdown').dropdown('get value'));
+		});
+
+		function saveDashboard(ajaxData) {
+			$.ajax({
+				url: './run/save',
+				type: 'POST',
+				contentType: 'application/json; charset=utf-8',
+				data: JSON.stringify(ajaxData),
+				success: function(data, textStatus, jqXHR) {
+					$('.dashboard.message').show().delay(3000).fadeOut('fast');
+				}
+			});
+		}
+
+		function maximizeChart(chartCode) {
+			$('#modal-max-panel-' + chartCode).modal().modal('show');
+		}
+
+		function editChart(chartCode) {
+			window.location.href = './chart/' + chartCode + '/edit';
+		}
+		
+		function deleteChart(chartCode) {
+			$.ajax({
+				url: './run/chart/delete?chartCode=' + chartCode,
+				type: 'GET',
+				success: function(data, textStatus, jqXHR) {
+					$.each(chartsArr, function(index, value) {
+						if (chartCode == value.chartCode) {
+							chartsArr.splice(index, 1);
+							$('#column-' + chartCode).remove();
+							return false;
+						}
+					});
+				}
+			});
+		}
+
+		function doRefreshTimer(refreshRate) {
+			if (refreshInterval != undefined) {
+				clearInterval(refreshInterval);
+			}
+			if (refreshRate != "Off") {
+				refreshInterval = setInterval(function() {
+					loadChartsData($('#dateRange').val(), $('#dateFormat').val(), $('#timeFormat').val());
+				}, refreshUnitToMilliseconds($('#refreshDropdown').dropdown('get value')));
+			}
+			
+			loadChartsData($('#dateRange').val(), $('#dateFormat').val(), $('#timeFormat').val());
+		}
+
+		function refreshUnitToMilliseconds(refreshUnit) {
+			var inMs = 15000; // 15 secs (default)
+
+			if (refreshUnit.endsWith('s')) {
+				var secs = refreshUnit.substring(0, refreshUnit.length-1);
+				inMs = secs * 1000;
+			}
+			else if (refreshUnit.endsWith('m')) {
+				var mins = refreshUnit.substring(0, refreshUnit.length-1);
+				inMs = mins * 60000;
+			}
+			else if (refreshUnit.endsWith('h')) {
+				var hrs = refreshUnit.substring(0, refreshUnit.length-1);
+				inMs = hrs * 3600000;
+			}
+			return inMs;
+		}
+
+		function initCharts(organisationVisualization) {
+			gridStack = GridStack.init({});
+			gridStack.setStatic(true);
+
+			$.each(organisationVisualization.charts.panels, function(index, value) {
+				var chartPanel = new ApexCharts(document.querySelector('#panel-' + value.chartCode), chartOptions(value, false));
+				chartPanel.render();
+
+				var chartModal = new ApexCharts(document.querySelector('#modal-max-panel-content-' + value.chartCode), chartOptions(value, true));
+				chartModal.render();
+
+				chartsArr.push({
+					'chartCode': value.chartCode,
+					'chartPanelObj': chartPanel,
+					'chartModalObj': chartModal
+				});
+			});
+		}
+
+		function loadChartsData(dateRange, dateFormat, timeFormat) {
+			$.each(chartsArr, function(index, value) {
+				var data = {
+					dateRange: dateRange,
+					dateRangeFormat: dateFormat + ' ' + timeFormat,
+					chartCode: value.chartCode
+				}
+				$.ajax({
+					url: './run/chart/load/data',
+					type: 'POST',
+					contentType: 'application/json; charset=utf-8',
+					data: JSON.stringify(data),
+					success: function(data, textStatus, jqXHR) {
+						value.chartPanelObj.updateSeries(
+							(data.searchResults == null) ? [] : data.searchResults.series
+						);
+
+						value.chartModalObj.updateSeries(
+							(data.searchResults == null) ? [] : data.searchResults.series
+						);
+
+						value.chartPanelObj.updateOptions({
+							labels: (data.searchResults == null) ? [] : data.searchResults.labels
+						});
+
+						value.chartModalObj.updateOptions({
+							labels: (data.searchResults == null) ? [] : data.searchResults.labels
+						});
+					}
+				});
+			});
+		}
+
+		function chartOptions(config, isMax) {
+			var customIcons = (isMax) ? [] : [{
+				icon: '<i class="expand icon" style="margin-left:5px;"></i>',
+				index: 0,
+				title: 'Maximize',
+				class: 'custom-icon',
+				click: function(chart, options, e) {
+					maximizeChart(chart.opts.chart.id);
+				}
+			}, {
+				icon: '<i class="edit icon" style="margin-left:5px;"></i>',
+				index: 0,
+				title: 'Edit',
+				class: 'custom-icon',
+				click: function(chart, options, e) {
+					editChart(chart.opts.chart.id);
+				}
+			}, {
+				icon: '<i class="trash alternate outline icon" style="margin-left:5px;"></i>',
+				index: 0,
+				title: 'Remove',
+				class: 'custom-icon',
+				click: function(chart, options, e) {
+					deleteChart(chart.opts.chart.id);
+				}
+			}];
+
+			var optionsChart = {
+				background: config.chartBackground,
+				foreColor: config.chartForeground,
+				id: config.chartCode,
+				toolbar: {
+					show: true,
+					tools: {
+						download: false,
+						selection: false,
+						zoom: false,
+						zoomin: false,
+						zoomout: false,
+						pan: false,
+						reset: false,
+						customIcons: customIcons
+					}
+				},
+				type: config.chartType
+			};
+
+			var optionsDataLabels = {
+				enabled: config.chartDataLabelsShow
+			};
+
+			var optionsGrid = {
+				show: config.chartGridShow,
+				borderColor: config.chartGridColor,
+				position: config.chartGridPosition,
+				xaxis: {
+					lines: {
+						show: config.chartGridShowX
+					}
+				},
+				yaxis: {
+					lines: {
+						show: config.chartGridShowY
+					}
+				}
+			};
+
+			var optionsLegend = {
+				show: config.chartLegendShow,
+				showForSingleSeries: config.chartLegendShow,
+				position: config.chartLegendPosition,
+				horizontalAlign: config.chartLegendAlign,
+				offsetX: config.chartLegendOffsetX,
+				offsetY: config.chartLegendOffsetY,
+				markers: {
+					width: config.chartLegendIconWidth,
+					height: config.chartLegendIconHeight,
+					radius: config.chartLegendIconRadius,
+					offsetX: config.chartLegendIconOffsetX,
+					offsetY: config.chartLegendIconOffsetY
+				}
+			};
+
+			var optionsMarker = {
+				size: config.chartMarkerSize,
+				shape: config.chartMarkerShape,
+				radius: config.chartMarkerRadius, 
+				offsetX: config.chartMarkerOffsetX,
+				offsetY: config.chartMarkerOffsetY
+			};
+
+			var optionsStroke = {
+				show: config.chartStrokeShow,
+				curve: config.chartStrokeCurve,
+				width: config.chartStrokeWidth
+			};
+
+			var optionsTheme = {
+				mode: config.chartThemeMode,
+				palette: config.chartPalette
+			};
+
+			var optionsTitle = {
+				align: config.chartTitleAlign,
+				text: config.chartTitle,
+				margin: config.chartTitleMargin,
+				offsetX: config.chartTitleOffsetX,
+				offsetY: config.chartTitleOffsetY,
+				style: {
+					color: config.chartTitleColor
+				}
+			};
+
+			var optionsTooltip = {
+				enabled: config.chartTooltipEnabled
+			};
+
+			var optionsXAxis = {
+				type: config.chartXAxisType,
+				labels: {
+					show: config.chartXAxisShow,
+					datetimeUTC: true
+				},
+				title: {
+					text: config.chartXAxisTitle,
+					offsetX: config.chartXAxisTitleOffsetX,
+					offsetY: config.chartXAxisTitleOffsetY
+				}
+			};
+
+			var optionsYAxis = {
+				opposite: config.chartYAxisOpposite,
+				reversed: config.chartYAxisFlip,
+				decimalsInFloat: config.chartYAxisDecimals,
+				labels: {
+					show: config.chartYAxisShow,
+				},
+				title: {
+					text: config.chartYAxisTitle,
+					offsetX: config.chartYAxisTitleOffsetX,
+					offsetY: config.chartYAxisTitleOffsetY
+				}
+			};
+
+			var options = {
+				chart: optionsChart,
+				dataLabels: optionsDataLabels,
+				grid: optionsGrid,
+				labels: [],
+				legend: optionsLegend,
+				markers: optionsMarker,
+				series: [],
+				stroke: optionsStroke,
+				theme: optionsTheme,
+				title: optionsTitle,
+				tooltip: optionsTooltip,
+				xaxis: optionsXAxis,
+				yaxis: optionsYAxis
+			};
+
+			return options;
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights?page=visualize(orgCode=${orgCode})}">insights</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights/visualize(orgCode=${orgCode})}">visualize</a>
+			<div class="divider"> / </div>
+			<div class="active section">run</div>
+		</div>
+		<div class="ui success dashboard message" style="display: none;">
+			<div class="content">Your dashboard has been saved.</div>
+		</div>
+		<input type="hidden" th:field="*{organisationVisualization.dateRange}"/>
+		<input type="hidden" th:field="*{organisationVisualization.dateFormat}"/>
+		<input type="hidden" th:field="*{organisationVisualization.timeFormat}"/>
+		<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span th:text="${organisationVisualization.name}"></span>
+			</div>
+			<div class="right menu">
+				<a class="item" title="Add chart" style="padding-right: 10px;" th:href="@{/organisation/{orgCode}/insights/visualize/{vizCode}/chart/add(orgCode=${orgCode},vizCode=${vizCode})}">
+					<i class="chart bar icon"></i>
+				</a>
+				<a class="save dashboard item" title="Save" style="padding-right: 10px;">
+					<i class="save icon"></i>
+				</a>
+				<a class="item" style="width: 425px;">
+					<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px;">
+						<div th:replace="common/components/dateRangePicker.html :: field(value=${organisationVisualization.dateRange})" th:remove="tag"></div>
+					</div>
+				</a>
+				<div class="ui dropdown item" id="refreshDropdown" title="Refresh" style="z-index: 1000;">
+					<input type="hidden" name="refreshUnit" id="refreshUnit" th:value="${organisationVisualization.refresh}"/>
+					<i class="sync alternate icon"></i>
+					<div class="default text">Refresh</div>
+					<i class="dropdown icon"></i>
+					<div class="menu">
+						<a class="item" data-value="Off">Off</a>
+						<a class="item" data-value="10s">10s</a>
+						<a class="item" data-value="30s">30s</a>
+						<a class="item" data-value="1m">1m</a>
+						<a class="item" data-value="5m">5m</a>
+						<a class="item" data-value="15m">15m</a>
+						<a class="item" data-value="30m">30m</a>
+						<a class="item" data-value="1h">1h</a>
+						<a class="item" data-value="2h">2h</a>
+						<a class="item" data-value="6h">6h</a>
+						<a class="item" data-value="12h">12h</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<div class="grid-stack" style="background: #F3F3F3; margin: -13px;">
+				<div th:each="panel,iter : ${organisationVisualization.charts.panels}" th:remove="tag">
+					<div class="grid-stack-item" gs-w="4" gs-h="3" th:id="'column-' + ${panel.chartCode}">
+						<div class="grid-stack-item-content">
+							<div th:id="'panel-' + ${panel.chartCode}" style="max-height: auto;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div th:each="panel,iter : ${organisationVisualization.charts.panels}" th:remove="tag">
+			<div class="ui small modal" th:id="'modal-max-panel-' + ${panel.chartCode}">
+				<div class="content" th:id="'modal-max-panel-content-' + ${panel.chartCode}"></div>
+		</div>
+
+		<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>
+	</div>
+</body>
+</html>

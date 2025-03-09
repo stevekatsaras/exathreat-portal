@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationSubscriptionsTable").tablesort();
+		});
+
+		function confirmSubscriptionView(subCode) {
+			$('#modal-view-' + subCode).modal().modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=subscriptions(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">subscriptions</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.changed}">
+			<div class="content">Your subscription has been changed.</div>
+		</div>
+		<div class="ui info fade message" th:if="${param.void}">
+			<div class="content">No action was taken to change your subscription.</div>
+		</div>
+		<div class="ui yellow fade message" th:if="${param.aborted}">
+			<div class="content">Your subscription has been reverted.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Subscriptions</span>
+			</div>
+			<div class="right menu">
+				<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+					<a class="hyperlink item" title="Change subscription" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/settings/subscriptions/change(orgCode=${orgCode})}"><i class="exchange alternate icon"></i></a>
+				</div>
+			</div>
+		</div>
+		<table id="organisationSubscriptionsTable" class="ui sortable selectable striped celled bottom attached table">
+			<thead>
+				<th class="three wide">Name</th>
+				<th class="two wide">Price</th>
+				<th>Terms</th>
+				<th class="two wide">Started</th>
+				<th class="two wide">Ended</th>
+				<th class="one wide">Status</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationSubscription,iter : ${organisationSubscriptions}">
+					<td>
+						<i class="sync icon"></i>
+						<a href="#" th:text="${organisationSubscription.subscription.name}" th:attr="onclick=|confirmSubscriptionView('${organisationSubscription.subCode}')|"></a>
+					</td>
+					<td>
+						<div th:with="currency=${organisationSubscription.subscription.currency}" th:remove="tag">
+							<div th:with="priceAmt=${(0.0 + organisationSubscription.subscription.priceAmount) / currency.divisible}" th:remove="tag">
+								<div th:text="${currency.symbol} + ${#numbers.formatDecimal(priceAmt, 1, 'COMMA', 2, 'POINT')} + ' ' + ${currency.iso3}"></div>
+							</div>
+						</div>
+					</td>
+					<td>
+						<div th:switch="${organisationSubscription.subscription.model}" th:remove="tag">
+							<div th:case="Free" th:remove="tag">
+								<div th:with="dataAmt=${(0 + organisationSubscription.subscription.dataAmount) / organisationSubscription.subscription.dataUnit.inBytes}" th:remove="tag">
+									<span th:text="${dataAmt} + ${organisationSubscription.subscription.dataUnit.unit} + ' free per ' + ${#strings.toLowerCase(organisationSubscription.subscription.pricePeriod)}"></span>
+								</div>
+							</div>
+							<div th:case="Paid" th:remove="tag">
+								<div th:with="currency=${organisationSubscription.subscription.currency}" th:remove="tag">
+									<div th:with="priceAmt=${(0.0 + organisationSubscription.subscription.priceAmount) / currency.divisible}" th:remove="tag">
+										<div th:with="dataAmt=${(0 + organisationSubscription.subscription.dataAmount) / organisationSubscription.subscription.dataUnit.inBytes}" th:remove="tag">
+											<div th:text="${currency.symbol} + ${#numbers.formatDecimal(priceAmt, 1, 'COMMA', 2, 'POINT')} + ' ' + ${currency.iso3} + ' per ' + ${dataAmt} + ${organisationSubscription.subscription.dataUnit.unit} + ' per ' + ${#strings.toLowerCase(organisationSubscription.subscription.pricePeriod)}"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</td>
+					<td>
+						<div th:text="${@timestampSupport.format(organisationSubscription.startDate, timezone, javaDateFormat)}"></div>
+					</td>
+					<td>
+						<div th:text="${@timestampSupport.format(organisationSubscription.endDate, timezone, javaDateFormat)}"></div>
+					</td>
+					<td>
+						<div th:switch="${organisationSubscription.status}" th:remove="tag">
+							<div th:case="New" th:remove="tag"><div class="ui small blue label" th:text="${organisationSubscription.status}"></div></div>
+							<div th:case="Active" th:remove="tag"><div class="ui small green label" th:text="${organisationSubscription.status}"></div></div>
+							<div th:case="Discontinued" th:remove="tag"><div class="ui small red label" th:text="${organisationSubscription.status}"></div></div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationSubscription,iter : ${organisationSubscriptions}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationSubscription.subCode}">
+				<div class="header" th:text="${organisationSubscription.subscription.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Description:</td>
+								<td th:text="${organisationSubscription.subscription.description}"></td>
+							</tr>
+							<tr>
+								<td style="vertical-align: top;">Features:</td>
+								<td>
+									<div class="ui bulleted list">
+										<div class="item">Log management</div>
+										<div class="item">Insights and visualisations</div>
+										<div class="item">Threat intelligence</div>
+										<div class="item">Monitoring and alerts</div>
+										<div th:each="feature: ${organisationSubscription.subscription.details.features}" th:remove="tag">
+											<div class="item" th:text="${feature}"></div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td style="vertical-align: top;">Terms</td>
+								<td>
+									<div class="ui bulleted list" style="font-weight: bold;">
+										<div th:each="term: ${organisationSubscription.subscription.details.terms}" th:remove="tag">
+											<div class="item" th:text="${term}"></div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Started:</td>
+								<td th:text="${@timestampSupport.format(organisationSubscription.startDate, timezone, javaDateFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Ended:</td>
+								<td th:text="${@timestampSupport.format(organisationSubscription.endDate, timezone, javaDateFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Status:</td>
+								<td>
+									<div th:switch="${organisationSubscription.status}" th:remove="tag">
+										<div th:case="New" th:remove="tag"><div class="ui small blue label" th:text="${organisationSubscription.status}"></div></div>
+										<div th:case="Active" th:remove="tag"><div class="ui small green label" th:text="${organisationSubscription.status}"></div></div>
+										<div th:case="Discontinued" th:remove="tag"><div class="ui small red label" th:text="${organisationSubscription.status}"></div></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationSubscription.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationSubscription.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationProcessorsTable").tablesort();
+		});
+		function confirmProcessorView(procCode) {
+			$('#modal-view-' + procCode).modal().modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=processors(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">processors</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your processors have been updated.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Processors</span>
+			</div>
+			<div class="right menu">
+				<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+					<a class="hyperlink item" title="Edit" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/settings/processors/edit(orgCode=${orgCode})}"><i class="edit icon"></i></a>
+				</div>
+			</div>
+		</div>
+		<table id="organisationProcessorsTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="sorted ascending three wide">Name</th>
+				<th>Description</th>
+				<th class="one wide">Type</th>
+				<th class="one wide">Enabled</th>
+			</thead>
+			<tbody>
+				<tr th:each="organisationProcessor,iter : ${organisationProcessors}">
+					<td>
+						<i class="microchip icon"></i>
+						<a href="#" th:text="${organisationProcessor.processor.name}" th:attr="onclick=|confirmProcessorView('${organisationProcessor.procCode}')|"></a>
+					</td>
+					<td>
+						<div th:text="${organisationProcessor.processor.description}"></div>
+					</td>
+					<td>
+						<div th:text="${organisationProcessor.processor.acronym}"></div>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationProcessor.enabled}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div>
+						</div>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationProcessor,iter : ${organisationProcessors}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationProcessor.procCode}">
+				<div class="header" th:text="${organisationProcessor.processor.name}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Description:</td>
+								<td th:text="${organisationProcessor.processor.description}"></td>
+							</tr>
+							<tr>
+								<td>Type:</td>
+								<td th:text="${organisationProcessor.processor.acronym}"></td>
+							</tr>
+							<tr>
+								<td>Enabled:</td>
+								<td>
+									<div th:switch="${organisationProcessor.enabled}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="red remove circle icon"></i></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationProcessor.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationProcessor.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

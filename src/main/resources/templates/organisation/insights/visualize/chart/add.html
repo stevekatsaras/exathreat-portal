@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<object th:include="common/components/dateRangePicker :: head" th:remove="tag"></object>
+	<script type="text/javascript" th:inline="javascript">
+		var chart;
+		$(document).ready(function() {
+			var addVisualizeChartForm = /*[[${addVisualizeChartForm}]]*/ {};
+
+			$('.chart.item').click(function() {
+				$(this).addClass('active').siblings().removeClass('active');
+				$('#chartType').val($(this).data('type'));
+			});
+
+			$('.chart.accordion').accordion({
+				exclusive: false
+			});
+
+			$('.add.query.button').click(function() {
+				addQuery();
+			});
+
+			$("#chartBackground").spectrum({
+				change: function(color) {
+					$(this).val(color.toHexString());
+				}
+			});
+
+			$("#chartForeground").spectrum({
+				change: function(color) {
+					$(this).val(color.toHexString());
+				}
+			});
+
+			$('#chartThemeModeDropdown').dropdown();
+			$('#chartPaletteDropdown').dropdown();
+
+			$('#chartGridPositionDropdown').dropdown();
+
+			$("#chartGridColor").spectrum({
+				change: function(color) {
+					$(this).val(color.toHexString());
+				}
+			});
+
+			$('#chartTitleAlignDropdown').dropdown();
+
+			$('#chartTitleMargin').on("change", function(e) {
+				if ($('#chartTitleMargin').val() == '' || $('#chartTitleMargin').val() < 0) {
+					$('#chartTitleMargin').val(0);
+				}
+			});
+
+			$('#chartTitleOffsetX').on("change", function(e) {
+				if ($('#chartTitleOffsetX').val() == '' || $('#chartTitleOffsetX').val() < -50) {
+					$('#chartTitleOffsetX').val(0);
+				}
+			});
+
+			$('#chartTitleOffsetY').on("change", function(e) {
+				if ($('#chartTitleOffsetY').val() == '' || $('#chartTitleOffsetY').val() < -50) {
+					$('#chartTitleOffsetY').val(0);
+				}
+			});
+
+			$("#chartTitleColor").spectrum({
+				change: function(color) {
+					$(this).val(color.toHexString());
+				}
+			});
+
+			$('#chartLegendAlignDropdown').dropdown();
+			$('#chartLegendPositionDropdown').dropdown();
+
+			$('#chartLegendOffsetX').on("change", function(e) {
+				if ($('#chartLegendOffsetX').val() == '' || $('#chartLegendOffsetX').val() < -50) {
+					$('#chartLegendOffsetX').val(0);
+				}
+			});
+
+			$('#chartLegendOffsetY').on("change", function(e) {
+				if ($('#chartLegendOffsetY').val() == '' || $('#chartLegendOffsetY').val() < -50) {
+					$('#chartLegendOffsetY').val(0);
+				}
+			});
+
+			$('#chartLegendIconWidth').on("change", function(e) {
+				if ($('#chartLegendIconWidth').val() == '' || $('#chartLegendIconWidth').val() < 1) {
+					$('#chartLegendIconWidth').val(1);
+				}
+			});
+
+			$('#chartLegendIconHeight').on("change", function(e) {
+				if ($('#chartLegendIconHeight').val() == '' || $('#chartLegendIconHeight').val() < 1) {
+					$('#chartLegendIconHeight').val(1);
+				}
+			});
+
+			$('#chartLegendIconRadius').on("change", function(e) {
+				if ($('#chartLegendIconRadius').val() == '' || $('#chartLegendIconRadius').val() < 0) {
+					$('#chartLegendIconRadius').val(0);
+				}
+			});
+
+			$('#chartLegendIconOffsetX').on("change", function(e) {
+				if ($('#chartLegendIconOffsetX').val() == '' || $('#chartLegendIconOffsetX').val() < -50) {
+					$('#chartLegendIconOffsetX').val(0);
+				}
+			});
+
+			$('#chartLegendIconOffsetY').on("change", function(e) {
+				if ($('#chartLegendIconOffsetY').val() == '' || $('#chartLegendIconOffsetY').val() < -50) {
+					$('#chartLegendIconOffsetY').val(0);
+				}
+			});
+
+			$('#chartMarkerSize').on("change", function(e) {
+				if ($('#chartMarkerSize').val() == '' || $('#chartMarkerSize').val() < 0) {
+					$('#chartMarkerSize').val(0);
+				}
+			});
+
+			$('#chartMarkerShapeDropdown').dropdown();
+
+			$('#chartMarkerRadius').on("change", function(e) {
+				if ($('#chartMarkerRadius').val() == '' || $('#chartMarkerRadius').val() < 0) {
+					$('#chartMarkerRadius').val(0);
+				}
+			});
+
+			$('#chartMarkerOffsetX').on("change", function(e) {
+				if ($('#chartMarkerOffsetX').val() == '' || $('#chartMarkerOffsetX').val() < -50) {
+					$('#chartMarkerOffsetX').val(0);
+				}
+			});
+
+			$('#chartMarkerOffsetY').on("change", function(e) {
+				if ($('#chartMarkerOffsetY').val() == '' || $('#chartMarkerOffsetY').val() < -50) {
+					$('#chartMarkerOffsetY').val(0);
+				}
+			});
+
+			$('#chartStrokeCurveDropdown').dropdown();
+
+			$('#chartStrokeWidth').on("change", function(e) {
+				if ($('#chartStrokeWidth').val() == '' || $('#chartStrokeWidth').val() < 0) {
+					$('#chartStrokeWidth').val(0);
+				}
+			});
+
+			$('#chartXAxisTypeDropdown').dropdown();
+
+			$('#chartXAxisTitleOffsetX').on("change", function(e) {
+				if ($('#chartXAxisTitleOffsetX').val() == '' || $('#chartXAxisTitleOffsetX').val() < -50) {
+					$('#chartXAxisTitleOffsetX').val(0);
+				}
+			});
+
+			$('#chartXAxisTitleOffsetY').on("change", function(e) {
+				if ($('#chartXAxisTitleOffsetY').val() == '' || $('#chartXAxisTitleOffsetY').val() < -50) {
+					$('#chartXAxisTitleOffsetY').val(0);
+				}
+			});
+
+			$('#chartYAxisDecimals').on("change", function(e) {
+				if ($('#chartYAxisDecimals').val() == '' || $('#chartYAxisDecimals').val() < -1) {
+					$('#chartYAxisDecimals').val(0);
+				}
+			});
+
+			$('#chartYAxisTitleOffsetX').on("change", function(e) {
+				if ($('#chartYAxisTitleOffsetX').val() == '' || $('#chartYAxisTitleOffsetX').val() < -50) {
+					$('#chartYAxisTitleOffsetX').val(0);
+				}
+			});
+
+			$('#chartYAxisTitleOffsetY').on("change", function(e) {
+				if ($('#chartYAxisTitleOffsetY').val() == '' || $('#chartYAxisTitleOffsetY').val() < -50) {
+					$('#chartYAxisTitleOffsetY').val(0);
+				}
+			});
+
+			$('.apply.chart.button').click(function() {
+				if ($('[name^=queries]').length == 0) {
+					$.when(addQuery()).then(function() {
+						loadData();
+					});
+				}
+				else {
+					loadData();
+				}
+			});
+
+			$(document).on('DateRangeChangeEvent', function(event, dateRangeValue, dateRangeType, javaDateFormat, javaTimeFormat) {
+				$('#organisationVisualization\\.dateRange').val(dateRangeValue);
+				
+				if (dateRangeType == 'absolute') {
+					$('#organisationVisualization\\.dateFormat').val(javaDateFormat);
+					$('#organisationVisualization\\.timeFormat').val(javaTimeFormat);
+				}
+			});
+
+			/** 
+			 * initializing page...
+			 */
+			
+			$('.chart.item').each(function(index, element) {
+				if ($(this).data('type') == $('#chartType').val()) {
+					$(this).addClass('active').siblings().removeClass('active');
+				}
+			});
+
+			loadData();
+		});
+		
+		function addQuery() {
+			return $.ajax({
+				url: './add/query/add',
+				type: 'POST',
+				data: $('#addVisualizeChartForm').serialize(),
+				success: function(data, textStatus, jqXHR) {
+					$('#queryUI').html(data);
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function loadData() {
+			$.ajax({
+				url: './add/load/data',
+				type: 'POST',
+				data: $('#addVisualizeChartForm').serialize(),
+				beforeSend: function() {
+					$('.apply.chart.button').removeClass('ui apply chart button').addClass('ui loading apply chart button');
+					return true;
+				},
+				success: function(data, textStatus, jqXHR) {
+					initChart(data);
+					$('.apply.chart.button').removeClass('ui loading apply chart button').addClass('ui apply chart button');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					
+				}
+			});
+		}
+
+		function initChart(addVisualizeChartForm) {
+			makeChart(chartOptions(addVisualizeChartForm));
+		}
+
+		function makeChart(options) {
+			if (chart != null) {
+				chart.destroy();
+			}
+			chart = new ApexCharts(document.querySelector("#my_dataviz"), options);
+			chart.render();
+		}
+
+		function chartOptions(addVisualizeChartForm) {
+			var optionsChart = {
+				background: addVisualizeChartForm.chartBackground,
+				foreColor: addVisualizeChartForm.chartForeground,
+				height: '100%',
+				toolbar: {
+					show: false
+				},
+				type: addVisualizeChartForm.chartType
+			};
+			
+			var optionsDataLabels = {
+				enabled: addVisualizeChartForm.chartDataLabelsShow
+			};
+
+			var optionsGrid = {
+				show: addVisualizeChartForm.chartGridShow,
+				borderColor: addVisualizeChartForm.chartGridColor,
+				position: addVisualizeChartForm.chartGridPosition,
+				xaxis: {
+					lines: {
+						show: addVisualizeChartForm.chartGridShowX
+					}
+				},
+				yaxis: {
+					lines: {
+						show: addVisualizeChartForm.chartGridShowY
+					}
+				}
+			};
+
+			var optionsLegend = {
+				show: addVisualizeChartForm.chartLegendShow,
+				showForSingleSeries: addVisualizeChartForm.chartLegendShow,
+				position: addVisualizeChartForm.chartLegendPosition,
+				horizontalAlign: addVisualizeChartForm.chartLegendAlign,
+				offsetX: addVisualizeChartForm.chartLegendOffsetX,
+				offsetY: addVisualizeChartForm.chartLegendOffsetY,
+				markers: {
+					width: addVisualizeChartForm.chartLegendIconWidth,
+					height: addVisualizeChartForm.chartLegendIconHeight,
+					radius: addVisualizeChartForm.chartLegendIconRadius,
+					offsetX: addVisualizeChartForm.chartLegendIconOffsetX,
+					offsetY: addVisualizeChartForm.chartLegendIconOffsetY
+				}
+			};
+
+			var optionsMarker = {
+				size: addVisualizeChartForm.chartMarkerSize,
+				shape: addVisualizeChartForm.chartMarkerShape,
+				radius: addVisualizeChartForm.chartMarkerRadius, 
+				offsetX: addVisualizeChartForm.chartMarkerOffsetX,
+				offsetY: addVisualizeChartForm.chartMarkerOffsetY
+			};
+
+			var optionsStroke = {
+				show: addVisualizeChartForm.chartStrokeShow,
+				curve: addVisualizeChartForm.chartStrokeCurve,
+				width: addVisualizeChartForm.chartStrokeWidth
+			};
+
+			var optionsTheme = {
+				mode: addVisualizeChartForm.chartThemeMode,
+				palette: addVisualizeChartForm.chartPalette
+			};
+
+			var optionsTitle = {
+				align: addVisualizeChartForm.chartTitleAlign,
+				text: addVisualizeChartForm.chartTitle,
+				margin: addVisualizeChartForm.chartTitleMargin,
+				offsetX: addVisualizeChartForm.chartTitleOffsetX,
+				offsetY: addVisualizeChartForm.chartTitleOffsetY,
+				style: {
+					color: addVisualizeChartForm.chartTitleColor
+				}
+			};
+
+			var optionsTooltip = {
+				enabled: addVisualizeChartForm.chartTooltipEnabled
+			};
+
+			var optionsXAxis = {
+				type: addVisualizeChartForm.chartXAxisType,
+				labels: {
+					show: addVisualizeChartForm.chartXAxisShow,
+					datetimeUTC: true
+				},
+				title: {
+					text: addVisualizeChartForm.chartXAxisTitle,
+					offsetX: addVisualizeChartForm.chartXAxisTitleOffsetX,
+					offsetY: addVisualizeChartForm.chartXAxisTitleOffsetY
+				}
+			};
+
+			var optionsYAxis = {
+				opposite: addVisualizeChartForm.chartYAxisOpposite,
+				reversed: addVisualizeChartForm.chartYAxisFlip,
+				decimalsInFloat: addVisualizeChartForm.chartYAxisDecimals,
+				labels: {
+					show: addVisualizeChartForm.chartYAxisShow,
+				},
+				title: {
+					text: addVisualizeChartForm.chartYAxisTitle,
+					offsetX: addVisualizeChartForm.chartYAxisTitleOffsetX,
+					offsetY: addVisualizeChartForm.chartYAxisTitleOffsetY
+				}
+			};
+
+			var options = {
+				chart: optionsChart,
+				dataLabels: optionsDataLabels,
+				grid: optionsGrid,
+				labels: (addVisualizeChartForm.searchResults == null) ? [] : addVisualizeChartForm.searchResults.labels,
+				legend: optionsLegend,
+				markers: optionsMarker,
+				series: (addVisualizeChartForm.searchResults == null) ? [] : addVisualizeChartForm.searchResults.series,
+				stroke: optionsStroke,
+				theme: optionsTheme,
+				title: optionsTitle,
+				tooltip: optionsTooltip,
+				xaxis: optionsXAxis,
+				yaxis: optionsYAxis
+			};
+
+			return options;
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights?page=visualize(orgCode=${orgCode})}">insights</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights/visualize(orgCode=${orgCode})}">visualize</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/insights/visualize/{vizCode}/run(orgCode=${orgCode},vizCode=${vizCode})}">chart</a>
+			<div class="divider"> / </div>
+			<div class="active section">add</div>
+		</div>
+		<form class="ui form" id="addVisualizeChartForm" th:action="@{/organisation/{orgCode}/insights/visualize/{vizCode}/chart/add(orgCode=${orgCode},vizCode=${vizCode})}" th:object="${addVisualizeChartForm}" method="post">
+			<input type="hidden" th:field="*{organisationVisualization.vizCode}"/>
+			<input type="hidden" th:field="*{organisationVisualization.name}"/>
+			<input type="hidden" th:field="*{organisationVisualization.dateRange}"/>
+			<input type="hidden" th:field="*{organisationVisualization.dateFormat}"/>
+			<input type="hidden" th:field="*{organisationVisualization.timeFormat}"/>
+			<div th:replace="common/components/dateRangePicker.html :: common" th:remove="tag"></div>
+
+			<div class="ui top attached menu">
+				<div class="header item">
+					<span>Add chart</span>
+				</div>
+				<div class="right menu">
+					<a class="chart item" title="Area chart" th:attr="data-type=area" style="padding-right: 10px;" >
+						<i class="chart area icon"></i>
+					</a>
+					<a class="chart item" title="Bar chart" th:attr="data-type=bar" style="padding-right: 10px;" >
+						<i class="chart bar icon"></i>
+					</a>
+					<a class="chart item" title="Line chart" th:attr="data-type=line" style="padding-right: 10px;" >
+						<i class="chart line icon"></i>
+					</a>
+					<a class="chart item" title="Treemap chart" th:attr="data-type=treemap" style="padding-right: 10px;" >
+						<i class="th icon"></i>
+					</a>
+					<a class="chart item" title="Pie chart" th:attr="data-type=pie" style="padding-right: 10px;" >
+						<i class="chart pie icon"></i>
+					</a>
+					<a class="chart item" title="Donut chart" th:attr="data-type=donut" style="padding-right: 10px;" >
+						<i class="circle outline icon"></i>
+					</a>
+					<a class="chart item" title="Polar chart" th:attr="data-type=polarArea" style="padding-right: 10px;" >
+						<i class="radiation icon"></i>
+					</a>
+					<a class="item" style="width: 425px;">
+						<div class="ui transparent input" style="margin-top: -10px; margin-bottom: -10px; margin-left: -5px; margin-right: -5px;">
+							<div th:replace="common/components/dateRangePicker.html :: field(value=${addVisualizeChartForm.organisationVisualization.dateRange})" th:remove="tag"></div>
+						</div>
+					</a>
+					<a class="item">
+						<button class="ui compact tiny apply chart button" type="button" style="margin: -10px;">Apply</button>
+					</a>
+					<a class="item">
+						<button class="ui compact teal tiny save chart button" type="submit" style="margin: -10px;">Save</button>
+					</a>
+				</div>
+			</div>
+			<div class="ui bottom attached segment">
+				<div class="ui two column grid">
+					<div class="eleven wide column">
+						<div class="ui top attached segment">
+							<div id="my_dataviz" style="height: 250px; min-height: 250px;"></div>
+						</div>
+						<div class="ui bottom attached segment">
+							<div id="queryUI" th:insert="organisation/insights/visualize/chart/fragments.html :: addChartQueries" style="margin-bottom: 10px;"></div>
+							<button class="ui compact teal tiny add query button" type="button">Add query</button>
+						</div>
+					</div>
+					<div class="five wide column">
+						<div class="ui styled fluid chart accordion">
+							<div class="title">
+								<i class="dropdown icon"></i> Chart
+							</div>
+							<div class="content">
+								<input type="hidden" th:field="*{chartType}" />
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Background</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartBackground}" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Foreground</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartForeground}" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Theme</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartThemeModeDropdown" title="Theme">
+													<input type="hidden" th:field="*{chartThemeMode}" />
+													<div class="default text">Theme</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="light">Light</a>
+														<a class="item" data-value="dark">Dark</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Palette</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartPaletteDropdown" title="Palette">
+													<input type="hidden" th:field="*{chartPalette}" />
+													<div class="default text">Palette</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="palette1">Palette 1</a>
+														<a class="item" data-value="palette2">Palette 2</a>
+														<a class="item" data-value="palette3">Palette 3</a>
+														<a class="item" data-value="palette4">Palette 4</a>
+														<a class="item" data-value="palette5">Palette 5</a>
+														<a class="item" data-value="palette6">Palette 6</a>
+														<a class="item" data-value="palette7">Palette 7</a>
+														<a class="item" data-value="palette8">Palette 8</a>
+														<a class="item" data-value="palette9">Palette 9</a>
+														<a class="item" data-value="palette10">Palette 10</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Grid
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartGridShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td style="width: 100px;">Show X</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartGridShowX}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td style="width: 100px;">Show Y</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartGridShowY}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Position</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartGridPositionDropdown" title="Position">
+													<input type="hidden" th:field="*{chartGridPosition}" />
+													<div class="default text">Position</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="back">Back</a>
+														<a class="item" data-value="front">Front</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Color</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartGridColor}" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Labels
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartDataLabelsShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Legend
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartLegendShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Alignment</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartLegendAlignDropdown" title="Alignment">
+													<input type="hidden" th:field="*{chartLegendAlign}" />
+													<div class="default text">Alignment</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="left">Left</a>
+														<a class="item" data-value="center">Center</a>
+														<a class="item" data-value="right">Right</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Position</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartLegendPositionDropdown" title="Position">
+													<input type="hidden" th:field="*{chartLegendPosition}" />
+													<div class="default text">Position</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="top">Top</a>
+														<a class="item" data-value="right">Right</a>
+														<a class="item" data-value="bottom">Bottom</a>
+														<a class="item" data-value="left">Left</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartLegendOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartLegendOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<br />
+								<table class="ui attached compact definition table">
+									<caption class="ui tiny header" style="text-align: left;">Icon</caption>
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Width</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="1" max="20" th:field="*{chartLegendIconWidth}" placeholder="Width" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Height</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="1" max="20" th:field="*{chartLegendIconHeight}" placeholder="Height" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Radius</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" max="20" th:field="*{chartLegendIconRadius}" placeholder="Radius" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartLegendIconOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartLegendIconOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Markers
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Size</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" max="20" th:field="*{chartMarkerSize}" placeholder="Size" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Shape</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartMarkerShapeDropdown" title="Shape">
+													<input type="hidden" th:field="*{chartMarkerShape}" />
+													<div class="default text">Shape</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="circle">Circle</a>
+														<a class="item" data-value="square">Square</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Radius</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" max="20" th:field="*{chartMarkerRadius}" placeholder="Radius" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartMarkerOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartMarkerOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Stroke
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartStrokeShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Curve</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartStrokeCurveDropdown" title="Curve">
+													<input type="hidden" th:field="*{chartStrokeCurve}" />
+													<div class="default text">Curve</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="smooth">Smooth</a>
+														<a class="item" data-value="straight">Straight</a>
+														<a class="item" data-value="stepline">Stepline</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td style="width: 100px;">Width</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" max="10" th:field="*{chartStrokeWidth}" placeholder="Width" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Title
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Name</td>
+											<td>
+												<div class="ui fluid input">
+													<input type="text" th:field="*{chartTitle}" placeholder="Title" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Alignment</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartTitleAlignDropdown" title="Alignment">
+													<input type="hidden" th:field="*{chartTitleAlign}" />
+													<div class="default text">Alignment</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="left">Left</a>
+														<a class="item" data-value="center">Center</a>
+														<a class="item" data-value="right">Right</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Margin</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" th:field="*{chartTitleMargin}" placeholder="Margin" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartTitleOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartTitleOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Color</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartTitleColor}" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Tooltip
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Enabled</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartTooltipEnabled}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> X-Axis
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartXAxisShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Type</td>
+											<td>
+												<div class="ui fluid search selection dropdown" id="chartXAxisTypeDropdown" title="Type">
+													<input type="hidden" th:field="*{chartXAxisType}" />
+													<div class="default text">Type</div> <i class="dropdown icon"></i>
+													<div class="menu">
+														<a class="item" data-value="category">Text</a>
+														<a class="item" data-value="datetime">Timestamp</a>
+														<a class="item" data-value="numeric">Numeric</a>
+													</div>
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<br />
+								<table class="ui attached compact definition table">
+									<caption class="ui tiny header" style="text-align: left;">Title</caption>
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Name</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartXAxisTitle}" placeholder="Name" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartXAxisTitleOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartXAxisTitleOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="title">
+								<i class="dropdown icon"></i> Y-Axis
+							</div>
+							<div class="content">
+								<table class="ui attached compact definition table">
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Show</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartYAxisShow}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Opposite</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartYAxisOpposite}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Flip</td>
+											<td>
+												<div class="ui toggle checkbox">
+													<input type="checkbox" th:field="*{chartYAxisFlip}" />
+													<label></label>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Decimals</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="0" th:field="*{chartYAxisDecimals}" placeholder="Decimals" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<br />
+								<table class="ui attached compact definition table">
+									<caption class="ui tiny header" style="text-align: left;">Title</caption>
+									<tbody>
+										<tr>
+											<td style="width: 100px;">Name</td>
+											<td>
+												<div class="ui input">
+													<input type="text" th:field="*{chartYAxisTitle}" placeholder="Name" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset X</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartYAxisTitleOffsetX}" placeholder="Offset X" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td>Offset Y</td>
+											<td>
+												<div class="ui input">
+													<input type="number" min="-50" th:field="*{chartYAxisTitleOffsetY}" placeholder="Offset Y" style="width: 100px;" />
+												</div>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</form>
+	</div>
+
+	<div th:replace="common/components/dateRangePicker.html :: popup" th:remove="tag"></div>
+	
+</body>
+</html>

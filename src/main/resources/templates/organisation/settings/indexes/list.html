@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationIndexesTable").tablesort();
+		});
+
+		function confirmIndexView(indCode) {
+			$('#modal-view-' + indCode).modal().modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=indexes(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">indexes</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your index has been updated.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Indexes</span>
+			</div>
+		</div>
+		<table id="organisationIdexesTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th>Name</th>
+				<th class="one wide">Type</th>
+				<th class="one wide">Retention</th>
+				<th class="three wide">Purgeable data</th>
+				<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+					<th class="one wide">Actions</th>
+				</div>
+			</thead>
+			<tbody>
+				<tr th:each="organisationIndex,iter : ${organisationIndexes}">
+					<td>
+						<i class="list alternate outline icon"></i>
+						<a href="#" th:text="${organisationIndex.aliasName}" th:attr="onclick=|confirmIndexView('${organisationIndex.indCode}')|"></a>
+					</td>
+					<td>
+						<div th:switch="${organisationIndex.indexType}" th:remove="tag">
+							<div th:case="alert" th:remove="tag"><div class="ui small green label" th:text="${organisationIndex.indexType}"></div></div>
+							<div th:case="data" th:remove="tag"><div class="ui small blue label" th:text="${organisationIndex.indexType}"></div></div>
+						</div>
+					</td>
+					<td>
+						<div th:text="${organisationIndex.retentionDays} + ' days'"></div>
+					</td>
+					<td>
+						<div th:text="'older than - ' + ${@timestampSupport.subtractDays(organisationInvoice.periodFrom, organisationIndex.retentionDays, javaDateFormat)}"></div>
+					</td>
+					<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+						<td>
+							<div class="ui tiny compact buttons">
+								<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/settings/indexes/{indCode}/edit(orgCode=${orgCode},indCode=${organisationIndex.indCode})}">
+									<i class="edit icon"></i>
+								</button>
+							</div>
+						</td>
+					</div>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationIndex,iter : ${organisationIndexes}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationIndex.indCode}">
+				<div class="header" th:text="${organisationIndex.aliasName}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Type:</td>
+								<td>
+									<div th:switch="${organisationIndex.indexType}" th:remove="tag">
+										<div th:case="alert" th:remove="tag"><div class="ui small green label" th:text="${organisationIndex.indexType}"></div></div>
+										<div th:case="data" th:remove="tag"><div class="ui small blue label" th:text="${organisationIndex.indexType}"></div></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Retention:</td>
+								<td>
+									<div th:text="${organisationIndex.retentionDays} + ' days'"></div>
+								</td>
+							</tr>
+							<tr>
+								<td>Purgeable data:</td>
+								<td>
+									<div th:text="'older than - ' + ${@timestampSupport.subtractDays(organisationInvoice.periodFrom, organisationIndex.retentionDays, javaDateFormat)}"></div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationIndex.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationIndex.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

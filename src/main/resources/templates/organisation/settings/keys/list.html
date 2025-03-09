@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$("#organisationKeysTable").tablesort();
+			$('.copy.key.button').on('click', function() {
+				var key = $(this).data('key');
+				copyToClipboard(key);
+				$('.clipboard.message').show().delay(3000).fadeOut('fast');
+			});
+		});
+
+		function confirmKeyView(keyCode) {
+			$('#modal-view-' + keyCode).modal().modal('show');
+		}
+
+		function copyToClipboard(key) {
+			var dummy = document.createElement('input');
+			document.body.appendChild(dummy);
+
+			dummy.setAttribute("id", "dummy_id");
+			document.getElementById("dummy_id").value = key;
+			dummy.select();
+			document.execCommand("copy");
+			document.body.removeChild(dummy);
+		}
+
+		function confirmKeyDelete(orgCode, keyCode, url) {
+			$('#modal-' + keyCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=keys(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<div class="active section">keys</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.added}">
+			<div class="content">Your key has been added.</div>
+		</div>
+		<div class="ui warning fade message" th:if="${param.disabled}">
+			<div class="content">Your key has been disabled.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.enabled}">
+			<div class="content">Your key has been enabled.</div>
+		</div>
+		<div class="ui negative fade message" th:if="${param.deleted}">
+			<div class="content">Your key has been deleted.</div>
+		</div>
+		<div class="ui success fade message" th:if="${param.updated}">
+			<div class="content">Your key has been updated.</div>
+		</div>
+		<div class="ui success clipboard message" style="display: none;">
+			<div class="content">Your key has been copied to the clipboard.</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Keys</span>
+			</div>
+			<div class="right menu">
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<a class="hyperlink item" title="Add key" style="padding-right: 10px;" th:attr="data-uri=@{/organisation/{orgCode}/settings/keys/add(orgCode=${orgCode})}"><i class="plus square icon"></i></a>
+				</div>
+			</div>
+		</div>
+		<table id="organisationKeysTable" class="ui sortable selectable striped celled compact bottom attached table">
+			<thead>
+				<th class="five wide">Key</th>
+				<th>Name</th>
+				<th class="one wide">Type</th>
+				<th class="one wide">Enabled</th>
+				<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+					<th class="one wide">Actions</th>
+				</div>
+			</thead>
+			<tbody>
+				<tr th:each="organisationKey,iter : ${organisationKeys}">
+					<td>
+						<i class="key icon"></i>
+						<a href="#" th:text="${organisationKey.keyCode}" th:attr="onclick=|confirmKeyView('${organisationKey.keyCode}')|"></a>
+						<button class="ui compact mini icon copy key button" type="button" title="Copy to clipboard" style="background-color: transparent;" th:attr="data-key=${organisationKey.keyCode}">
+							<i class="copy icon"></i>
+						</button>
+					</td>
+					<td>
+						<div th:text="${organisationKey.name}"></div>
+					</td>
+					<td>
+						<div th:text="${organisationKey.keyType}"></div>
+					</td>
+					<td class="center aligned">
+						<div th:switch="${organisationKey.enabled}" th:remove="tag">
+							<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+							<div th:case="false" th:remove="tag"><i class="yellow remove circle icon"></i></div>
+						</div>
+					</td>
+					<div th:if="${loggedInUser.userRole != 'VIEWER'}" th:remove="tag">
+						<td>
+							<div class="ui tiny compact buttons">
+								<button class="ui compact tiny icon hyperlink button" type="button" title="Edit" th:attr="data-uri=@{/organisation/{orgCode}/settings/keys/{keyCode}/edit(orgCode=${orgCode},keyCode=${organisationKey.keyCode})}">
+									<i class="edit icon"></i>
+								</button>
+								<div th:switch="${organisationKey.enabled}" th:remove="tag">
+									<div th:case="true" th:remove="tag">
+										<button class="ui compact tiny yellow icon hyperlink button" type="button" title="Disable" th:attr="data-uri=@{/organisation/{orgCode}/settings/keys/{keyCode}/disable(orgCode=${orgCode},keyCode=${organisationKey.keyCode})}">
+											<i class="toggle off icon"></i>
+										</button>
+									</div>
+									<div th:case="false" th:remove="tag">
+										<button class="ui compact tiny green icon hyperlink button" type="button" title="Enable" th:attr="data-uri=@{/organisation/{orgCode}/settings/keys/{keyCode}/enable(orgCode=${orgCode},keyCode=${organisationKey.keyCode})}">
+												<i class="toggle on icon"></i>
+										</button>
+									</div>
+								</div>
+								<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+									<button class="ui compact tiny red icon button" type="button" title="Delete" th:attr="onclick=|confirmKeyDelete('${orgCode}', '${organisationKey.keyCode}', '@{/organisation/{orgCode}/settings/keys/{keyCode}/delete(orgCode=${orgCode},keyCode=${organisationKey.keyCode})}')|">
+										<i class="trash icon"></i>
+									</button>
+								</div>
+							</div>
+							<div th:if="${loggedInUser.userRole == 'ADMIN'}" th:remove="tag">
+								<div class="ui modal" th:id="'modal-' + ${organisationKey.keyCode}">
+									<div class="header">Delete key</div>
+									<div class="content">
+										<span th:text="'Are you sure you want to delete key: ' + ${organisationKey.keyCode}" style="font-weight: bold;"></span>
+									</div>
+									<div class="actions">
+										<button class="ui compact cancel button" type="button">No</button>
+										<button class="ui compact red approve button" type="button">Yes</button>
+									</div>
+								</div>
+							</div>
+						</td>
+					</div>
+				</tr>
+			</tbody>
+		</table>
+		<div th:each="organisationKey,iter : ${organisationKeys}" th:remove="tag">
+			<div class="ui modal" th:id="'modal-view-' + ${organisationKey.keyCode}">
+				<div class="header" th:text="${organisationKey.keyCode}"></div>
+				<div class="content">
+					<table class="ui definition compact collapsing table">
+						<tbody>
+							<tr>
+								<td>Name:</td>
+								<td th:text="${organisationKey.name}"></td>
+							</tr>
+							<tr>
+								<td>Description:</td>
+								<td th:text="${organisationKey.description}"></td>
+							</tr>
+							<tr>
+								<td>Type:</td>
+								<td th:text="${organisationKey.keyType}"></td>
+							</tr>
+							<tr>
+								<td>Enabled:</td>
+								<td>
+									<div th:switch="${organisationKey.enabled}" th:remove="tag">
+										<div th:case="true" th:remove="tag"><i class="green check circle icon"></i></div>
+										<div th:case="false" th:remove="tag"><i class="yellow remove circle icon"></i></div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>Created:</td>
+								<td th:text="${@timestampSupport.format(organisationKey.created, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+							<tr>
+								<td>Modified:</td>
+								<td th:text="${@timestampSupport.format(organisationKey.modified, timezone, javaDateFormat + ' ' + javaTimeFormat)}"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="actions">
+					<button class="ui compact cancel button" type="button">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

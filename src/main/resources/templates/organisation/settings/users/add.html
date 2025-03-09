@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#userRoleDropdown').dropdown();
+			$('#addUsersSettingsForm').submit(function () {
+				$('#addUsersSettingsFormDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=users(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/users(orgCode=${orgCode})}">users</a>
+			<div class="divider"> / </div>
+			<div class="active section">add</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('addUsersSettingsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('addUsersSettingsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Add user</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="addUsersSettingsForm" th:action="@{/organisation/{orgCode}/settings/users/add(orgCode=${orgCode})}" th:object="${addUsersSettingsForm}" method="post">
+				<div class="required field" th:classappend="${#fields.hasErrors('organisationUser.emailAddress')} ? error" title="Email address">
+					<label>Email address</label>
+					<div class="ui left icon input">
+						<i class="user icon"></i><input type="email" th:field="*{organisationUser.emailAddress}" placeholder="Email address"/>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide required field" th:classappend="${#fields.hasErrors('organisationUser.givenName')} ? error" title="Given name">
+						<label>Given name</label>
+						<div class="ui left icon input">
+							<i class="user icon"></i><input type="text" th:field="*{organisationUser.givenName}" placeholder="Given name"/>
+						</div>
+					</div>
+					<div class="eight wide required field" th:classappend="${#fields.hasErrors('organisationUser.surname')} ? error" title="Surname">
+						<label>Surname</label>
+						<div class="ui left icon input">
+							<i class="user icon"></i><input type="text" th:field="*{organisationUser.surname}" placeholder="Surname"/>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" title="Telephone">
+						<label>Telephone</label>
+						<div class="ui left icon input">
+							<i class="phone icon"></i><input type="text" th:field="*{organisationUser.telephone}" placeholder="Telephone"/>
+						</div>
+					</div>
+					<div class="eight wide field" title="Mobile">
+						<label>Mobile</label>
+						<div class="ui left icon input">
+							<i class="mobile icon"></i><input type="text" th:field="*{organisationUser.mobile}" placeholder="Mobile"/>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide required field" th:classappend="${#fields.hasErrors('organisationUser.userRole')} ? error" title="User role">
+						<label>User role</label>
+						<div class="ui fluid search selection dropdown" id="userRoleDropdown">
+							<input type="hidden" th:field="*{organisationUser.userRole}" /> <i class="dropdown icon"></i>
+							<div class="default text">User role</div>
+							<div class="menu">
+								<div class="item" th:each="orgUserRole,iter : ${orgUserRoles}" th:attr="data-value=${orgUserRole}" th:text="${orgUserRole}"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="field" style="text-align:left;">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/users(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact teal button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="addUsersSettingsFormDimmer" style="display:none;">
+				<div class="ui text loader">Saving organisation user...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

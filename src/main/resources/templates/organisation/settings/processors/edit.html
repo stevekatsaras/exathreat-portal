@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#editProcessorsSettingsForm').submit(function () {
+				$('#editProcessorsSettingsFormDimmer').show();
+			});
+		});
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=processors(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/processors(orgCode=${orgCode})}">processors</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit processors</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editProcessorsSettingsForm" th:action="@{/organisation/{orgCode}/settings/processors/edit(orgCode=${orgCode})}" th:object="${editProcessorsSettingsForm}" method="post">
+				<table class="ui celled compact table">
+					<tbody>
+						<tr th:each="organisationProcessor,iter : *{organisationProcessors}">
+							<input type="hidden" th:field="*{organisationProcessors[__${iter.index}__].procCode}"/>
+							<td>
+								<div class="ui checkbox">
+									<input type="checkbox" th:field="*{organisationProcessors[__${iter.index}__].enabled}" th:id="${organisationProcessor.procCode}"/>
+									<label th:for="${organisationProcessor.procCode}" th:text="${organisationProcessor.processor.acronym}"></label>
+								</div>
+							</td>
+							<td th:text="${organisationProcessor.processor.name}"></td>
+							<td th:text="${organisationProcessor.processor.description}"></td>
+						</tr>
+					</tbody>
+				</table>
+				<div class="field">
+					<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/processors(orgCode=${orgCode})}">Cancel</button>
+					<button class="ui compact primary button" type="submit">Save</button>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editProcessorsSettingsFormDimmer" style="display:none;">
+				<div class="ui text loader">Updating organisation processors...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

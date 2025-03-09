@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<title>Exathreat</title>
+	<object th:include="common/head :: head" th:remove="tag"></object>
+	<object th:include="common/menu :: head" th:remove="tag"></object>
+	<script>
+		$(document).ready(function() {
+			$('#businessTypeDropdown').dropdown();
+			$('#countryDropdown').dropdown();
+
+			$('#editOrganisationSettingsForm').submit(function () {
+				$('#editOrganisationSettingsFormDimmer').show();
+			});
+		});
+
+		function confirmOrgDeactivate(orgCode, url) {
+			$('#modal-' + orgCode).modal({
+				onApprove: function() {
+					window.location.href = url;
+				}
+			}).modal('show');
+		}
+	</script>
+</head>
+<body>
+	<object th:include="common/menu :: menu" th:remove="tag"></object>
+	<div class="ui bottom attached segment" style="border: none;">
+		<div class="ui tiny breadcrumb">
+			<a class="section" th:href="@{/}">organisations</a>
+			<div class="divider"> / </div>
+			<a class="section" th:text="${#strings.toLowerCase(currentOrganisation.orgName)}" th:href="@{/organisation/{orgCode}(orgCode=${orgCode})}"></a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings?page=general(orgCode=${orgCode})}">settings</a>
+			<div class="divider"> / </div>
+			<a class="section" th:href="@{/organisation/{orgCode}/settings/general(orgCode=${orgCode})}">general</a>
+			<div class="divider"> / </div>
+			<div class="active section">edit</div>
+		</div>
+		<div class="ui error fade message" th:if="${#fields.hasErrors('editOrganisationSettingsForm.*')}">
+			<ul class="list">
+				<li th:each="err : ${#fields.errors('editOrganisationSettingsForm.*')}" th:text="${err}"></li>
+			</ul>
+		</div>
+		<div class="ui top attached menu">
+			<div class="header item">
+				<span>Edit general settings</span>
+			</div>
+		</div>
+		<div class="ui bottom attached segment">
+			<form class="ui form" id="editOrganisationSettingsForm" th:action="@{/organisation/{orgCode}/settings/general/edit(orgCode=${orgCode})}" th:object="${editOrganisationSettingsForm}" method="post">
+				<input type="hidden" th:field="*{organisation.orgCode}"/>
+	
+				<div class="required field" title="Organisation name">
+					<label>Organisation name</label>
+					<div class="ui left icon input">
+						<i class="building icon"></i><input type="text" th:field="*{organisation.orgName}" placeholder="Organisation name" />
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide required field" th:classappend="${#fields.hasErrors('organisation.businessType.id')} ? error" title="Business type">
+						<label>Business type</label>
+						<div class="ui fluid search selection dropdown" id="businessTypeDropdown">
+							<input type="hidden" th:field="*{organisation.businessType.id}" /> <i class="dropdown icon"></i>
+							<div class="default text">Business type</div>
+							<div class="menu">
+								<div class="item" th:each="businessType,iter : ${businessTypes}" th:attr="data-value=${businessType.id}" th:text="${businessType.name}"></div>
+							</div>
+						</div>
+					</div>
+					<div class="eight wide field">
+						<label>Business number</label>
+						<div class="ui left icon input">
+							<i class="building icon"></i><input type="text" th:field="*{organisation.businessNumber}" placeholder="Business number" />
+							<div class="ui teal floating mini circular icon label" data-position="left center" data-inverted="" data-tooltip="In Australia, ACN/ABN; outside Australia, your registered business number">
+								<i class="info icon"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" title="Address 1">
+						<label>Address 1</label>
+						<div class="ui left icon input">
+							<i class="marker icon"></i><input type="text" th:field="*{organisation.address1}" placeholder="Address 1" />
+						</div>
+					</div>
+					<div class="eight wide field" title="Address 2">
+						<label>Address 2</label>
+						<div class="ui left icon input">
+							<i class="marker icon"></i><input type="text" th:field="*{organisation.address2}" placeholder="Address 2" />
+						</div>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" title="City">
+						<label>City</label>
+						<div class="ui left icon input">
+							<i class="marker icon"></i><input type="text" th:field="*{organisation.city}" placeholder="City" />
+						</div>
+					</div>
+					<div class="four wide field" title="State">
+						<label>State</label>
+						<div class="ui left icon input">
+							<i class="marker icon"></i><input type="text" th:field="*{organisation.state}" placeholder="State" />
+						</div>
+					</div>
+					<div class="four wide required field" th:classappend="${#fields.hasErrors('organisation.postcode')} ? error" title="Postcode">
+						<label>Postcode</label>
+						<div class="ui left icon input">
+							<i class="marker icon"></i><input type="text" th:field="*{organisation.postcode}" placeholder="Postcode" />
+							<div class="ui teal floating mini circular icon label" data-position="left center" data-inverted="" data-tooltip="In Australia, postcode; outside Australia, zipcode">
+								<i class="info icon"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="required field" th:classappend="${#fields.hasErrors('organisation.country.id')} ? error" title="Country">
+					<label>Country</label>
+					<div class="ui fluid search selection dropdown" id="countryDropdown">
+						<input type="hidden" th:field="*{organisation.country.id}" placeholder="Country" /> <i class="dropdown icon"></i>
+						<div class="default text">Country</div>
+						<div class="menu">
+							<div class="item" th:each="country,iter : ${countries}" th:attr="data-value=${country.id}" th:text="${country.name}"></div>
+						</div>
+					</div>
+				</div>
+				<div class="field" title="Website">
+					<label>Website</label>
+					<div class="ui left icon input">
+						<i class="world icon"></i><input type="url" th:field="*{organisation.website}" placeholder="Website" />
+					</div>
+				</div>
+				<div class="fields">
+					<div class="eight wide field" style="text-align:left;">
+						<button class="ui compact hyperlink button" type="button" th:attr="data-uri=@{/organisation/{orgCode}/settings/general(orgCode=${orgCode})}">Cancel</button>
+						<button class="ui compact teal button" type="submit">Save</button>
+					</div>
+					<div class="eight wide field" style="text-align:right;">
+						<button class="ui compact red button" type="button" th:attr="onclick=|confirmOrgDeactivate('${orgCode}', '@{/organisation/{orgCode}/settings/general/deactivate(orgCode=${orgCode})}')|">Deactivate</button>
+						<div class="ui modal" th:id="'modal-' + ${orgCode}">
+							<div class="header">Deactivate organisation</div>
+							<div class="content">
+								<span th:text="'Are you sure you want to deactivate organisation: ' + ${editOrganisationSettingsForm.organisation.orgName} + ' (' + ${orgCode} + ')'" style="font-weight: bold;"></span>
+								<p></p>
+								<span>Performing this action will:</span>
+								<li>Disable all events from being ingested</li>
+								<li>Disable all detections from triggering</li>
+								<li>All new invoices will be generated and marked 'due' under the normal payment terms</li>
+								<p></p>
+								<span>If you wish to re-activate this organisation in future, it can be done via the management console.</span>
+							</div>
+							<div class="actions">
+								<button class="ui compact cancel button" type="button">No</button>
+								<button class="ui compact red approve button" type="button">Yes</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+			<div class="ui active inverted dimmer" id="editOrganisationSettingsFormDimmer" style="display:none;">
+				<div class="ui text loader">Updating organisation...</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

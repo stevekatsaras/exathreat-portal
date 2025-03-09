@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+	<div th:fragment="addChartQueries" th:remove="tag">
+		<script type="text/javascript" th:inline="javascript">
+			$(document).ready(function() {
+				$('.show.query.item').on('click', function() {
+					var queryShowField = $('[name="queries[' + $(this).data('index') + '][queryShow]"]');
+					queryShowField.val((queryShowField.val() == 'true' ? false : true));
+					refreshShowQueryItem($(this), queryShowField.val());
+				});
+
+				$('.clone.query.item').on('click', function() {
+					cloneQuery($(this).data('index'));
+				});
+
+				$('.remove.query.item').on('click', function() {
+					removeQuery($(this).data('index'));
+				});
+
+				$('.query.index.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshMetricQueryFields(index, $(this));
+						refreshAggregateQueryFields(index, $(this));
+					}
+				});
+
+				$('.query.metric.type.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshMetricQueryFields(index, $('.query.index.dropdown:eq(' + index + ')'));
+					}
+				});
+
+				$('.query.metric.field.dropdown').dropdown();
+
+				$('.query.aggregate.type.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshAggregateQueryFields(index, $('.query.index.dropdown:eq(' + index + ')'));
+					}
+				});
+
+				$('.query.aggregate.field.dropdown').dropdown();
+
+				$('.query.options.accordion').accordion({
+					exclusive: false
+				});
+
+				$('.query.min.doc.count').on("change", function(e) {
+					if ($(this).val() == '' || $(this).val() < 0) {
+						$(this).val(0);
+					}
+				});
+
+				$('.query.limit.dropdown').dropdown();
+				$('.query.order.dropdown').dropdown();
+				$('.query.orderby.dropdown').dropdown();
+
+				/** 
+				 * initializing queries...
+				 */
+
+				 $('.show.query.item').each(function(index, element) {
+					 refreshShowQueryItem($(this), $('[name="queries[' + $(this).data('index') + '][queryShow]"]').val());
+				 });
+				 
+				 $('.query.index.dropdown').each(function(index, element) {
+					refreshMetricQueryFields(index, $(this));
+					refreshAggregateQueryFields(index, $(this));
+				 });
+			});
+
+			function refreshShowQueryItem(queryShowItem, queryShowFieldVal) {
+				if (queryShowFieldVal == 'true') {
+					queryShowItem.find('i').removeClass('eye slash icon').addClass('eye icon');
+				}
+				else {
+					queryShowItem.find('i').removeClass('eye icon').addClass('eye slash icon');
+				}
+			}
+			
+			function cloneQuery(queryIndex) {
+				$.ajax({
+					url: './add/query/clone?queryIndex=' + queryIndex,
+					type: 'POST',
+					data: $('#addVisualizeChartForm').serialize(),
+					success: function(data, textStatus, jqXHR) {
+						$('#queryUI').html(data);
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+
+			function removeQuery(queryIndex) {
+				$.ajax({
+					url: './add/query/remove?queryIndex=' + queryIndex,
+					type: 'POST',
+					data: $('#addVisualizeChartForm').serialize(),
+					success: function(data, textStatus, jqXHR) {
+						$('#queryUI').html(data);
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+
+			function refreshMetricQueryFields(index, queryIndexDropdown) {
+				var queryMetricTypeDropdown = $('.query.metric.type.dropdown:eq(' + index + ')');
+				var queryMetricFieldDropdown = $('.query.metric.field.dropdown:eq(' + index + ')');
+
+				if (queryMetricTypeDropdown.dropdown('get value') != 'count') {
+					getQueryFieldMappings(queryIndexDropdown, queryMetricTypeDropdown, queryMetricFieldDropdown);
+					queryMetricFieldDropdown.show();
+				}
+				else {
+					queryMetricFieldDropdown.hide();
+				}
+			}
+			
+			function refreshAggregateQueryFields(index, queryIndexDropdown) {
+				var queryAggregateTypeDropdown = $('.query.aggregate.type.dropdown:eq(' + index + ')');
+				var queryAggregateFieldDropdown = $('.query.aggregate.field.dropdown:eq(' + index + ')');
+				getQueryFieldMappings(queryIndexDropdown, queryAggregateTypeDropdown, queryAggregateFieldDropdown);
+			}
+
+			function getQueryFieldMappings(queryIndexDropdown, queryTypeDropdown, queryFieldDropdown) {
+				var data = {
+					queryIndexAlias: queryIndexDropdown.dropdown('get value'),
+					queryFieldType: queryTypeDropdown.dropdown('get value')
+				}
+				$.ajax({
+					url: './add/field/mappings',
+					type: 'POST',
+					contentType: 'application/json; charset=utf-8',
+					data: JSON.stringify(data),
+					success: function(data, textStatus, jqXHR) {
+						queryFieldDropdown.dropdown('restore placeholder text');
+						queryFieldDropdown.dropdown('setup menu', data);
+						queryFieldDropdown.dropdown('set selected', queryFieldDropdown.dropdown('get value'));
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+		</script>
+		<div th:each="query, iter : ${addVisualizeChartForm.queries}">
+			<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryShow]}" />
+			<div class="ui top attached mini menu">
+				<div class="right menu">
+					<a class="show query item" th:attr="data-index=${iter.index}" title="Show/hide query" style="padding-right: 10px;" >
+						<i class="eye icon"></i>
+					</a>
+					<a class="clone query item" th:attr="data-index=${iter.index}" title="Clone query" style="padding-right: 10px;" >
+						<i class="clone icon"></i>
+					</a>
+					<a class="remove query item" th:attr="data-index=${iter.index}" title="Remove query" style="padding-right: 10px;" >
+						<i class="trash alternate outline icon"></i>
+					</a>
+				</div>
+			</div>
+			<table class="ui bottom attached compact definition table" style="margin-bottom: 10px;">
+				<tbody>
+					<tr>
+						<td style="width: 100px;">Index</td>
+						<td style="width: 300px;">
+							<div class="ui fluid search selection query index dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryIndexAlias]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Index</div>
+								<div class="menu">
+									<div class="item" th:each="index,iter : ${indices}" th:attr="data-value=${index.aliasName}" th:text="${index.aliasName}"></div>
+									<div class="item" th:attr="data-value=exathreat-intel" th:text="exathreat-intel"></div>
+								</div>
+							</div>
+						</td>
+						<td style="width: 100px; font-weight: 700; background: rgba(0,0,0,.03); border-left: 1px solid rgba(34,36,38,.1); border-right: 1px solid rgba(34,36,38,.1);">Name</td>
+						<td>
+							<div class="ui fluid input">
+								<input type="text" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryName]}" title="Name" placeholder="Name">
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Query</td>
+						<td colspan="3">
+							<div class="ui fluid input">
+								<input type="text" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryStr]}" title="Search" placeholder="Search...">
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Metric</td>
+						<td>
+							<div class="ui fluid search selection query metric type dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryMetricType]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Metric</div>
+								<div class="menu">
+									<div class="item" th:each="queryMetric,iter : ${queryMetricTypes}" th:attr="data-value=${queryMetric.type}" th:text="${queryMetric.label}"></div>
+								</div>
+							</div>
+						</td>
+						<td colspan="2">
+							<div class="ui fluid search selection query metric field dropdown" th:attr="data-index=${iter.index}" style="display: none;">
+								<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryMetricField]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Field</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Aggregate</td>
+						<td>
+							<div class="ui fluid search selection query aggregate type dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryAggregateType]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Aggregate</div>
+								<div class="menu">
+									<div class="item" th:each="queryAggregate,iter : ${queryAggregateTypes}" th:attr="data-value=${queryAggregate.type}" th:text="${queryAggregate.label}"></div>
+								</div>
+							</div>
+						</td>
+						<td colspan="2">
+							<div class="ui fluid search selection query aggregate field dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryAggregateField]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Field</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td colspan="3">
+							<div class="ui query options accordion field">
+								<div class="title">
+									<i class="icon dropdown"></i> Optional settings
+								</div>
+								<div class="content">
+									<table class="ui attached compact definition table">
+										<tbody>
+											<tr>
+												<td style="width: 150px;">Min doc count</td>
+												<td>
+													<div class="ui input" style="width: 100px;">
+														<input type="number" class="query min doc count" min="0" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryMinDocCount]}" />
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Limit</td>
+												<td>
+													<div class="ui search selection query limit dropdown">
+														<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryLimit]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Limit</div>
+														<div class="menu">
+															<div class="item" data-value="1">1</div>
+															<div class="item" data-value="2">2</div>
+															<div class="item" data-value="3">3</div>
+															<div class="item" data-value="5">5</div>
+															<div class="item" data-value="10">10</div>
+															<div class="item" data-value="15">15</div>
+															<div class="item" data-value="20">20</div>
+															<div class="item" data-value="25">25</div>
+															<div class="item" data-value="500">Unlimited</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Order</td>
+												<td>
+													<div class="ui search selection query order dropdown">
+														<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryOrder]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Order</div>
+														<div class="menu">
+															<div class="item" data-value="asc">Ascending</div>
+															<div class="item" data-value="desc">Descending</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Order by</td>
+												<td>
+													<div class="ui search selection query orderby dropdown">
+														<input type="hidden" th:field="${addVisualizeChartForm.queries[__${iter.index}__][queryOrderBy]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Order by</div>
+														<div class="menu">
+															<div class="item" data-value="metric">Metric</div>
+															<div class="item" data-value="terms">Terms</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div th:fragment="editChartQueries" th:remove="tag">
+		<script type="text/javascript" th:inline="javascript">
+			$(document).ready(function() {
+				$('.show.query.item').on('click', function() {
+					var queryShowField = $('[name="queries[' + $(this).data('index') + '][queryShow]"]');
+					queryShowField.val((queryShowField.val() == 'true' ? false : true));
+					refreshShowQueryItem($(this), queryShowField.val());
+				});
+
+				$('.clone.query.item').on('click', function() {
+					cloneQuery($(this).data('index'));
+				});
+
+				$('.remove.query.item').on('click', function() {
+					removeQuery($(this).data('index'));
+				});
+
+				$('.query.index.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshMetricQueryFields(index, $(this));
+						refreshAggregateQueryFields(index, $(this));
+					}
+				});
+
+				$('.query.metric.type.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshMetricQueryFields(index, $('.query.index.dropdown:eq(' + index + ')'));
+					}
+				});
+
+				$('.query.metric.field.dropdown').dropdown();
+
+				$('.query.aggregate.type.dropdown').dropdown({
+					onChange: function(value, text, $selectedItem) {
+						var index = $(this).data('index');
+						refreshAggregateQueryFields(index, $('.query.index.dropdown:eq(' + index + ')'));
+					}
+				});
+
+				$('.query.aggregate.field.dropdown').dropdown();
+
+				$('.query.options.accordion').accordion({
+					exclusive: false
+				});
+
+				$('.query.min.doc.count').on("change", function(e) {
+					if ($(this).val() == '' || $(this).val() < 0) {
+						$(this).val(0);
+					}
+				});
+
+				$('.query.limit.dropdown').dropdown();
+				$('.query.order.dropdown').dropdown();
+				$('.query.orderby.dropdown').dropdown();
+
+				/** 
+				 * initializing queries...
+				 */
+
+				 $('.show.query.item').each(function(index, element) {
+					 refreshShowQueryItem($(this), $('[name="queries[' + $(this).data('index') + '][queryShow]"]').val());
+				 });
+				 
+				 $('.query.index.dropdown').each(function(index, element) {
+					 refreshMetricQueryFields(index, $(this));
+					 refreshAggregateQueryFields(index, $(this));
+				 });
+			});
+
+			function refreshShowQueryItem(queryShowItem, queryShowFieldVal) {
+				if (queryShowFieldVal == 'true') {
+					queryShowItem.find('i').removeClass('eye slash icon').addClass('eye icon');
+				}
+				else {
+					queryShowItem.find('i').removeClass('eye icon').addClass('eye slash icon');
+				}
+			}
+			
+			function cloneQuery(queryIndex) {
+				$.ajax({
+					url: './edit/query/clone?queryIndex=' + queryIndex,
+					type: 'POST',
+					data: $('#editVisualizeChartForm').serialize(),
+					success: function(data, textStatus, jqXHR) {
+						$('#queryUI').html(data);
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+
+			function removeQuery(queryIndex) {
+				$.ajax({
+					url: './edit/query/remove?queryIndex=' + queryIndex,
+					type: 'POST',
+					data: $('#editVisualizeChartForm').serialize(),
+					success: function(data, textStatus, jqXHR) {
+						$('#queryUI').html(data);
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+
+			function refreshMetricQueryFields(index, queryIndexDropdown) {
+				var queryMetricTypeDropdown = $('.query.metric.type.dropdown:eq(' + index + ')');
+				var queryMetricFieldDropdown = $('.query.metric.field.dropdown:eq(' + index + ')');
+
+				if (queryMetricTypeDropdown.dropdown('get value') != 'count') {
+					getQueryFieldMappings(queryIndexDropdown, queryMetricTypeDropdown, queryMetricFieldDropdown);
+					queryMetricFieldDropdown.show();
+				}
+				else {
+					queryMetricFieldDropdown.hide();
+				}
+			}
+			
+			function refreshAggregateQueryFields(index, queryIndexDropdown) {
+				var queryAggregateTypeDropdown = $('.query.aggregate.type.dropdown:eq(' + index + ')');
+				var queryAggregateFieldDropdown = $('.query.aggregate.field.dropdown:eq(' + index + ')');
+				getQueryFieldMappings(queryIndexDropdown, queryAggregateTypeDropdown, queryAggregateFieldDropdown);
+			}
+
+			function getQueryFieldMappings(queryIndexDropdown, queryTypeDropdown, queryFieldDropdown) {
+				var data = {
+					queryIndexAlias: queryIndexDropdown.dropdown('get value'),
+					queryFieldType: queryTypeDropdown.dropdown('get value')
+				}
+				$.ajax({
+					url: './edit/field/mappings',
+					type: 'POST',
+					contentType: 'application/json; charset=utf-8',
+					data: JSON.stringify(data),
+					success: function(data, textStatus, jqXHR) {
+						queryFieldDropdown.dropdown('restore placeholder text');
+						queryFieldDropdown.dropdown('setup menu', data);
+						queryFieldDropdown.dropdown('set selected', queryFieldDropdown.dropdown('get value'));
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+					
+					}
+				});
+			}
+		</script>
+		<div th:each="query, iter : ${editVisualizeChartForm.queries}">
+			<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryShow]}" />
+			<div class="ui top attached mini menu">
+				<div class="right menu">
+					<a class="show query item" th:attr="data-index=${iter.index}" title="Show/hide query" style="padding-right: 10px;" >
+						<i class="eye icon"></i>
+					</a>
+					<a class="clone query item" th:attr="data-index=${iter.index}" title="Clone query" style="padding-right: 10px;" >
+						<i class="clone icon"></i>
+					</a>
+					<a class="remove query item" th:attr="data-index=${iter.index}" title="Remove query" style="padding-right: 10px;" >
+						<i class="trash alternate outline icon"></i>
+					</a>
+				</div>
+			</div>
+			<table class="ui bottom attached compact definition table" style="margin-bottom: 10px;">
+				<tbody>
+					<tr>
+						<td style="width: 100px;">Index</td>
+						<td style="width: 300px;">
+							<div class="ui fluid search selection query index dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryIndexAlias]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Index</div>
+								<div class="menu">
+									<div class="item" th:each="index,iter : ${indices}" th:attr="data-value=${index.aliasName}" th:text="${index.aliasName}"></div>
+									<div class="item" th:attr="data-value=exathreat-intel" th:text="exathreat-intel"></div>
+								</div>
+							</div>
+						</td>
+						<td style="width: 100px; font-weight: 700; background: rgba(0,0,0,.03); border-left: 1px solid rgba(34,36,38,.1); border-right: 1px solid rgba(34,36,38,.1);">Name</td>
+						<td>
+							<div class="ui fluid input">
+								<input type="text" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryName]}" title="Name" placeholder="Name">
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Query</td>
+						<td colspan="3">
+							<div class="ui fluid input">
+								<input type="text" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryStr]}" title="Search" placeholder="Search...">
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Metric</td>
+						<td>
+							<div class="ui fluid search selection query metric type dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryMetricType]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Metric</div>
+								<div class="menu">
+									<div class="item" th:each="queryMetric,iter : ${queryMetricTypes}" th:attr="data-value=${queryMetric.type}" th:text="${queryMetric.label}"></div>
+								</div>
+							</div>
+						</td>
+						<td colspan="2">
+							<div class="ui fluid search selection query metric field dropdown" th:attr="data-index=${iter.index}" style="display: none;">
+								<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryMetricField]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Field</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td>Aggregate</td>
+						<td>
+							<div class="ui fluid search selection query aggregate type dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryAggregateType]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Aggregate</div>
+								<div class="menu">
+									<div class="item" th:each="queryAggregate,iter : ${queryAggregateTypes}" th:attr="data-value=${queryAggregate.type}" th:text="${queryAggregate.label}"></div>
+								</div>
+							</div>
+						</td>
+						<td colspan="2">
+							<div class="ui fluid search selection query aggregate field dropdown" th:attr="data-index=${iter.index}">
+								<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryAggregateField]}" /> <i class="dropdown icon"></i>
+								<div class="default text">Field</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td colspan="3">
+							<div class="ui query options accordion field">
+								<div class="title">
+									<i class="icon dropdown"></i> Optional settings
+								</div>
+								<div class="content">
+									<table class="ui attached compact definition table">
+										<tbody>
+											<tr>
+												<td style="width: 150px;">Min doc count</td>
+												<td>
+													<div class="ui input" style="width: 100px;">
+														<input type="number" class="query min doc count" min="0" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryMinDocCount]}" />
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Limit</td>
+												<td>
+													<div class="ui search selection query limit dropdown">
+														<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryLimit]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Limit</div>
+														<div class="menu">
+															<div class="item" data-value="1">1</div>
+															<div class="item" data-value="2">2</div>
+															<div class="item" data-value="3">3</div>
+															<div class="item" data-value="5">5</div>
+															<div class="item" data-value="10">10</div>
+															<div class="item" data-value="15">15</div>
+															<div class="item" data-value="20">20</div>
+															<div class="item" data-value="25">25</div>
+															<div class="item" data-value="500">Unlimited</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Order</td>
+												<td>
+													<div class="ui search selection query order dropdown">
+														<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryOrder]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Order</div>
+														<div class="menu">
+															<div class="item" data-value="asc">Ascending</div>
+															<div class="item" data-value="desc">Descending</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+											<tr>
+												<td>Order by</td>
+												<td>
+													<div class="ui search selection query orderby dropdown">
+														<input type="hidden" th:field="${editVisualizeChartForm.queries[__${iter.index}__][queryOrderBy]}" /> <i class="dropdown icon"></i>
+														<div class="default text">Order by</div>
+														<div class="menu">
+															<div class="item" data-value="metric">Metric</div>
+															<div class="item" data-value="terms">Terms</div>
+														</div>
+													</div>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</body>
+</html>
